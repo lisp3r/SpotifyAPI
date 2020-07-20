@@ -13,8 +13,9 @@
 
 import os
 import requests
-from requests.compat import quote_plus, urljoin, quote
-from urllib.parse import urlparse, parse_qs
+from requests.adapters import HTTPAdapter
+
+from urllib.parse import urlparse, parse_qs, urljoin
 import logging
 import time
 from setup import CLIENT_CREDS_ENV_VARS
@@ -38,10 +39,8 @@ logger = createLogger(__name__)
 
 
 def _make_authorization_headers(client_id, client_secret):
-    auth_header = base64.b64encode(
-        six.text_type(client_id + ":" + client_secret).encode("ascii")
-    )
-    return {"Authorization": "Basic %s" % auth_header.decode("ascii")}
+    auth_header = base64.b64encode(f'{client_id}:{client_secret}'.encode('ascii'))
+    return {'Authorization': f'Basic {auth_header.decode("ascii")}'}
 
 class AuthFlowError(Exception):
     pass
@@ -128,23 +127,23 @@ class AuthorizationCode(AuthFlowBase):
         self.show_dialog = show_dialog
         self.cache_token_path=cache_token_path
 
-    def authorize(self):
+    def get_token(self) -> str:
         logger.info('Authorizing with Authorization Code Flow')
-        # we have cached token?
-        self.__token_info = self.get_cached_token()
+        self.__token_info = self._get_cached_token()
 
         if self.__token_info:
-            if self.is_token_expired():
+            if self._is_token_expired():
                 self.refresh_authorization_token()
         else:
-            self.get_authorization_token()
+            self._get_authorization_token()
         logger.info('Authorization complite')
+        return self.__token_info['access_token']
 
-    def is_token_expired(self):
+    def _is_token_expired(self) -> bool:
         now = int(time.time())
         return self.__token_info["expires_at"] - now < 60
 
-    def _get_authorization_code(self):
+    def _get_authorization_code(self) -> str:
         """ Step 1. Have your application request authorization; the user logs in and authorizes access
 
         GET https://accounts.spotify.com/authorize
@@ -174,7 +173,7 @@ class AuthorizationCode(AuthFlowBase):
         code = parse_qs(urlparse(return_url).query)['code']
         return code
 
-    def get_authorization_token(self, _cache_token=True):
+    def _get_authorization_token(self, cache_token=True) -> None:
         """ Step 2. Exchange code with an access token
 
         POST https://accounts.spotify.com/api/token
@@ -211,10 +210,10 @@ class AuthorizationCode(AuthFlowBase):
         self.__token_info = resp.json() # {'access_token': 'BQ...', 'token_type': 'Bearer', 'expires_in': 3600, 'refresh_token': 'AQ...', 'scope': '...'}
         self.__token_info['expires_at'] = int(time.time()) + self.__token_info["expires_in"]
 
-        if _cache_token:
-            self.cache_token()
+        if cache_token:
+            self._cache_token()
 
-    def refresh_authorization_token(self, _cache_token=True):
+    def refresh_authorization_token(self, cache_token=True) -> None:
         """ Requesting a refreshed access token; Spotify returns a new access token to your app
         """
 
@@ -231,17 +230,17 @@ class AuthorizationCode(AuthFlowBase):
             raise AuthFlowError(f'Getting responce token error: {resp.status_code}: {resp.text}')
         self.__token_info = resp.json()
         self.__token_info['expires_at'] = int(time.time()) + self.__token_info["expires_in"]
-        if _cache_token:
-            self.cache_token()
+        if cache_token:
+            self._cache_token()
 
-    def cache_token(self):
+    def _cache_token(self) -> None:
         try:
             with open(self.cache_token_path, 'w') as f:
                 json.dump(self.__token_info, f)
         except IOError as e:
             logger.warning(f'Can not save token in {self.cache_token_path}: {e}')
 
-    def get_cached_token(self):
+    def _get_cached_token(self) -> None:
         token_info = None
         try:
             with open(self.cache_token_path, 'r') as f:
@@ -262,11 +261,62 @@ class ClientCredentials(AuthFlowBase):
     pass
 
 class Spotify:
-    def __init__(self, auth_manager, request_session=True):
+    SPOTIFY_API_URL = 'https://api.spotify.com/v1/'
+
+    def __init__(self, auth_manager=None, token=None, request_session=True):
         self.auth_manager = auth_manager
+        self.__token = token
+
+        if isinstance(request_session, requests.Session):
+            self._session = request_session
+        else:
+            if request_session:
+                self._session = self._create_session()
+            else:
+                self._session = requests.api
+
+    def __del__(self):
+        """Make sure the connection (pool) gets closed"""
+        if isinstance(self._session, requests.Session):
+            self._session.close()
+
+    def _create_session(self) -> requests.Session:
+        adapter = HTTPAdapter(max_retries=3)
+        session = requests.Session()
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        return session
+
+    def _get_headers(self) -> dict:
+        logger.debug('Getting token')
+        if not self.auth_manager:
+            return {}
+        if not self.__token:
+            self.__token = self.auth_manager.get_token()
+        return {'Authorization': f'Bearer {self.__token}'}
+
+    # def __api_request(self, method, url, payload, params):
+    #     logger.debug('Creating API request')
+    #     headers = self._get_headers()
+
+    #     try:
+    #         response = self._session.request(method, url, headers=headers)
+    #         response.raise_for_status()
+    #         results = response.json()
+    #     except 
+
+    def getCategories(self):
+        headers = self._get_headers()
+        url = urljoin(self.SPOTIFY_API_URL, 'browse/categories')
+        print(url)
+
+        resp = self._session.request(method='GET', url=url, headers=headers, params=None, data=None)
+        print(resp.text)
+
+
 
 sp = Spotify(AuthorizationCode())
-sp.auth_manager.authorize()
+sp.getCategories()
 
     # def __method_url__(self, method, api_url=None):
     #     if not api_url:
