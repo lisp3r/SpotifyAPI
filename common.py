@@ -114,7 +114,7 @@ class AuthorizationCode(AuthFlowBase):
                  scope=None,
                  redirect_uri=None,
                  show_dialog=False,
-                 cache_token_path='.cache_spotify_token'
+                 cache_token_path='.cached_spotify_token'
                  ):
 
         super(AuthorizationCode, self).__init__(request_session)
