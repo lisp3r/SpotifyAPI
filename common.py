@@ -25,11 +25,11 @@ import json
 
 # import requests_oauthlib
 
-def createLogger(name):
+def createLogger(name, lvl=logging.DEBUG):
     logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(lvl)
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(lvl)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     logger.addHandler(ch)
@@ -133,7 +133,7 @@ class AuthorizationCode(AuthFlowBase):
 
         if self.__token_info:
             if self._is_token_expired():
-                self.refresh_authorization_token()
+                self._refresh_authorization_token()
         else:
             self._get_authorization_token()
         logger.info('Authorization complite')
@@ -213,7 +213,7 @@ class AuthorizationCode(AuthFlowBase):
         if cache_token:
             self._cache_token()
 
-    def refresh_authorization_token(self, cache_token=True) -> None:
+    def _refresh_authorization_token(self, cache_token=True) -> None:
         """ Requesting a refreshed access token; Spotify returns a new access token to your app
         """
 
@@ -295,8 +295,7 @@ class Spotify:
             self.__token = self.auth_manager.get_token()
         return {'Authorization': f'Bearer {self.__token}'}
 
-    # def __api_request(self, method, url, payload, params):
-    #     logger.debug('Creating API request')
+    # def __api_request(self, url, method='GET', params=None, data=None):
     #     headers = self._get_headers()
 
     #     try:
@@ -305,18 +304,32 @@ class Spotify:
     #         results = response.json()
     #     except 
 
-    def getCategories(self):
+    def getCategories(self, country=None, locale=None, limit=None, offset=None):
         headers = self._get_headers()
         url = urljoin(self.SPOTIFY_API_URL, 'browse/categories')
-        print(url)
 
-        resp = self._session.request(method='GET', url=url, headers=headers, params=None, data=None)
-        print(resp.text)
+        payload = dict()
+        if country:
+            payload.update({'country': country})
+        if limit:
+            payload.update({'limit': limit})
+        if locale:
+            payload.update({'locale': locale})
+        if offset:
+            payload.update({'offset': offset})
+
+        resp = self._session.request(method='GET', url=url, headers=headers, params=payload, data=None)
+        resp.raise_for_status()
+
+        logger.debug(f'Getting categories: {resp.url}')
+        # print([x['name'] for x in resp.json()['categories']['items']])
+        return resp.json()
 
 
 
 sp = Spotify(AuthorizationCode())
-sp.getCategories()
+resp = sp.getCategories(limit=50, country='PH')
+print([x['name'] for x in resp['categories']['items']])
 
     # def __method_url__(self, method, api_url=None):
     #     if not api_url:
