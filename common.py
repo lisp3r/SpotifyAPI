@@ -15,7 +15,7 @@ import os
 import requests
 from requests.adapters import HTTPAdapter
 
-from urllib.parse import urlparse, parse_qs, urljoin
+from urllib.parse import urlparse, parse_qs, urljoin, quote
 import logging
 import time
 from setup import CLIENT_CREDS_ENV_VARS
@@ -94,6 +94,30 @@ class AuthFlowBase():
         # implement val checking
         self._redirect_uri = self._enshure_creds(val, 'redirect_uri')
 
+class Scope():
+    def __init__(self, scope_list=None):
+        if isinstance(scope_list, list):
+            self.scope = list(set(scope_list))
+        elif isinstance(scope_list, str) and scope_list != '':
+            self.scope = list(set(scope_list.split(' ')))
+        else:
+            self.scope = []
+
+    def get_quoted(self):
+        return quote(self.__str__())
+
+    def __len__(self):
+        return len(self.scope)
+
+    def __str__(self):
+        return ' '.join([s for s in self.scope])
+
+    def __eq__(self, other):
+        return set(self.scope) == set(other.scope)
+
+    def __nonzero__(self):
+        return bool(self.scope)
+
 class AuthorizationCode(AuthFlowBase):
     """ Authorization Code
     
@@ -121,7 +145,7 @@ class AuthorizationCode(AuthFlowBase):
 
         self.client_id = client_id
         self.client_secret = client_secret
-        self.scope = scope
+        self.scope = Scope(scope)
         self.__token_info = None
         self.redirect_uri = redirect_uri
         self.show_dialog = show_dialog
@@ -131,7 +155,7 @@ class AuthorizationCode(AuthFlowBase):
         logger.info('Authorizing with Authorization Code Flow')
         self.__token_info = self._get_cached_token()
 
-        if self.__token_info:
+        if self.__token_info and Scope(self.__token_info['scope']) == self.scope:
             if self._is_token_expired():
                 self._refresh_authorization_token()
         else:
@@ -161,7 +185,7 @@ class AuthorizationCode(AuthFlowBase):
         }
 
         if self.scope:
-            payload.update({'scope': self.scope})
+            payload.update({'scope': self.scope.get_quoted()})
 
         if self.show_dialog:
             payload.update({'show_dialog': self.show_dialog})
@@ -217,7 +241,7 @@ class AuthorizationCode(AuthFlowBase):
         """ Requesting a refreshed access token; Spotify returns a new access token to your app
         """
 
-        logger.info('Refrash expired token')
+        logger.info('Refresh expired token')
         headers = _make_authorization_headers(self._client_id, self._client_secret)
 
         data = {
@@ -250,7 +274,6 @@ class AuthorizationCode(AuthFlowBase):
             logger.warning(f'Can not get token from {self.cache_token_path}: {e}')
         return token_info
 
-
 class AuthorizationCodeWithPKCE(AuthFlowBase):
     pass
 
@@ -258,6 +281,9 @@ class ImplicitGrant(AuthFlowBase):
     pass
 
 class ClientCredentials(AuthFlowBase):
+    pass
+
+class SpotifyRequestError(Exception):
     pass
 
 class Spotify:
@@ -325,9 +351,48 @@ class Spotify:
         # print([x['name'] for x in resp.json()['categories']['items']])
         return resp.json()
 
+    def getCategoryPlaylist(self, category_id, country=None, limit=None, offset=None):
+        headers = self._get_headers()
+        url = urljoin(self.SPOTIFY_API_URL, f'browse/categories/{category_id}/playlists')
+
+        payload = dict()
+        if country:
+            payload.update({'country': country})
+        if limit:
+            payload.update({'limit': limit})
+        if offset:
+            payload.update({'offset': offset})
+
+        resp = self._session.request(method='GET', url=url, headers=headers, params=payload, data=None)
+        resp.raise_for_status()
+
+        logger.debug(f'Getting {category_id} playlists')
+        return resp.json()
+
+    def getUserAvaliableDevices(self):
+        """ user-read-playback-state """
+        headers = self._get_headers()
+        url = urljoin(self.SPOTIFY_API_URL, f'me/player/devices')
+        resp = self._session.request(method='GET', url=url, headers=headers, params=None, data=None)
+        resp.raise_for_status()
+        return resp.json()
+
+    def getUserCurrentPlayback(self):
+        """ user-read-playback-state """
+        headers = self._get_headers()
+        url = urljoin(self.SPOTIFY_API_URL, f'me/player')
+        resp = self._session.request(method='GET', url=url, headers=headers, params=None, data=None)
+        resp.raise_for_status()
+        print(resp.text)
 
 
-sp = Spotify(AuthorizationCode())
-resp = sp.getCategories(limit=50, country='PH')
-print([x['name'] for x in resp['categories']['items']])
+sp = Spotify(AuthorizationCode(scope=['user-read-playback-state', 'user-modify-playback-state']))
+sp.getUserCurrentPlayback()
+# devices = sp.getUserAvaliableDevices()
+# resp = sp.getCategories(limit=50, country='US')
+# print([x['name'] for x in resp['categories']['items']])
 
+# cat = resp['categories']['items'][5]['id']
+# print(cat)
+# resp2 = sp.getCategoryPlaylist(cat)
+# print(resp2)
