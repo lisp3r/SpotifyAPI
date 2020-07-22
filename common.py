@@ -157,8 +157,10 @@ class AuthorizationCode(AuthFlowBase):
 
         if self.__token_info and Scope(self.__token_info['scope']) == self.scope:
             if self._is_token_expired():
+                logger.debug('Token expired. Refreshing token...')
                 self._refresh_authorization_token()
         else:
+            logger.debug('No cached token or scope is not correct')
             self._get_authorization_token()
         logger.info('Authorization complite')
         return self.__token_info['access_token']
@@ -283,8 +285,23 @@ class ImplicitGrant(AuthFlowBase):
 class ClientCredentials(AuthFlowBase):
     pass
 
-class SpotifyRequestError(Exception):
+class SpotifyError(Exception):
     pass
+
+class SpotifyRequestError(SpotifyError):
+    def __init__(self, body):
+        self.body = json.loads(body)
+        self.status = self.body["error"]["status"]
+        self.message = self.body["error"]["message"]
+        self.reason = self.body["error"].get("reason")
+    def __str__(self):
+        return f'{self.body}'
+
+class SpotifyRequestNoContent(SpotifyError):
+    def __init__(self):
+        self.reason = 'NO CONTENT'
+    def __str__(self):
+        return f'{self.reason}'
 
 class Spotify:
     SPOTIFY_API_URL = 'https://api.spotify.com/v1/'
@@ -314,26 +331,26 @@ class Spotify:
         return session
 
     def _get_headers(self) -> dict:
-        logger.debug('Getting token')
         if not self.auth_manager:
             return {}
         if not self.__token:
             self.__token = self.auth_manager.get_token()
         return {'Authorization': f'Bearer {self.__token}'}
 
-    # def __api_request(self, url, method='GET', params=None, data=None):
-    #     headers = self._get_headers()
+    def __api_request(self, method, url_path, headers=None, params=None, data=None):
+        headers = self._get_headers()
+        url = urljoin(self.SPOTIFY_API_URL, url_path)
 
-    #     try:
-    #         response = self._session.request(method, url, headers=headers)
-    #         response.raise_for_status()
-    #         results = response.json()
-    #     except 
+        try:
+            resp = self._session.request(method=method, url=url, headers=headers, params=params, data=data)
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            logger.error(err)
+            raise SpotifyRequestError(resp.text)
+
+        return resp
 
     def getCategories(self, country=None, locale=None, limit=None, offset=None):
-        headers = self._get_headers()
-        url = urljoin(self.SPOTIFY_API_URL, 'browse/categories')
-
         payload = dict()
         if country:
             payload.update({'country': country})
@@ -344,17 +361,12 @@ class Spotify:
         if offset:
             payload.update({'offset': offset})
 
-        resp = self._session.request(method='GET', url=url, headers=headers, params=payload, data=None)
-        resp.raise_for_status()
+        logger.debug(f'Getting categories: {", ".join(f"{x}={payload[x]}" for x in payload)}')
 
-        logger.debug(f'Getting categories: {resp.url}')
-        # print([x['name'] for x in resp.json()['categories']['items']])
+        resp = self.__api_request(method='GET', url_path='browse/categories', params=payload)
         return resp.json()
 
     def getCategoryPlaylist(self, category_id, country=None, limit=None, offset=None):
-        headers = self._get_headers()
-        url = urljoin(self.SPOTIFY_API_URL, f'browse/categories/{category_id}/playlists')
-
         payload = dict()
         if country:
             payload.update({'country': country})
@@ -363,32 +375,99 @@ class Spotify:
         if offset:
             payload.update({'offset': offset})
 
-        resp = self._session.request(method='GET', url=url, headers=headers, params=payload, data=None)
-        resp.raise_for_status()
+        logger.debug(f'Getting {category_id} playlists: {", ".join(f"{x}={payload[x]}" for x in payload)}')
 
-        logger.debug(f'Getting {category_id} playlists')
+        resp = self.__api_request(method='GET', url_path=f'browse/categories/{category_id}/playlists', params=payload)
         return resp.json()
 
     def getUserAvaliableDevices(self):
         """ user-read-playback-state """
-        headers = self._get_headers()
-        url = urljoin(self.SPOTIFY_API_URL, f'me/player/devices')
-        resp = self._session.request(method='GET', url=url, headers=headers, params=None, data=None)
-        resp.raise_for_status()
-        return resp.json()
+        logger.debug(f'Getting avaliable devices')
+        return self.__api_request(method='GET', url_path=f'me/player/devices').json()
 
     def getUserCurrentPlayback(self):
         """ user-read-playback-state """
-        headers = self._get_headers()
-        url = urljoin(self.SPOTIFY_API_URL, f'me/player')
-        resp = self._session.request(method='GET', url=url, headers=headers, params=None, data=None)
-        resp.raise_for_status()
-        print(resp.text)
+        logger.debug(f'Getting current playback')
+
+        try:
+            res = self.__api_request(method='GET', url_path='me/player')
+            res.raise_for_status()
+        except SpotifyRequestError as err:
+            logger.error(err)
+            raise
+        if res.status_code == 204:
+            raise SpotifyRequestNoContent
+        return res.json()
+
+    def pauseUserPlayback(self, device_id=None) -> None:
+        """ user-modify-playback-state"""
+        logger.debug(f'Pause user playback')
+
+        params = dict()
+        if device_id:
+            params.update({'device_id': device_id})
+
+        self.__api_request(method='PUT', url_path='me/player/pause', params=params)
+
+    def startOrResumeUserPlayback(self, device_id=None, context_uri=None, uris=None, offset=None, position_ms=None):
+        """ user-modify-playback-state
+
+        context_uri:    Spotify URI of the context to play (albums, artists, playlists).
+                        Example: {"context_uri": "spotify:album:1Je1IMUlBXcx1Fz0WE7oPT"}
+        uris:    Spotify track URIs to play.
+                 Example: {"uris": ["spotify:track:4iV5W9uYEdYUVa79Axb7Rh", "spotify:track:1301WleyT98MSxVHPZCA6M"]}
+        offset:    Indicates from where in the context playback should start.
+                   Avaliable when `context_uri` corresponds to an album or playlist object, or when the `uris` parameter is used.
+                   Example: "offset": {"position": 5}
+                   “uri” is a string representing the uri of the item to start at.
+                   Example: "offset": {"uri": "spotify:track:1301WleyT98MSxVHPZCA6M"}
+        position_ms:    Passing in a position that is greater than the length of the track will cause the player to start playing the next song.
+        """
+        logger.debug(f"Start/Resume a User's Playback")
+        params = dict()
+        if device_id:
+            params.update({"device_id": device_id})
+        body = dict()
+        if context_uri:
+            body.update({"context_uri": context_uri})
+        if uris:
+            body.update({"uris": uris})
+        if offset:
+            body.update({"offset": offset})
+        if position_ms:
+            body.update({"position_ms": position_ms})
+
+        if not body:
+            body = None
+
+        try:
+            res = self.__api_request(method='PUT', url_path='me/player/play', params=params, data=json.dumps(body))
+            print(res)
+        except SpotifyRequestError as err:
+            logger.error(err)
+            raise
+        return res
+
+def getInfo(sp):
+    devices = sp.getUserAvaliableDevices()
+    try:
+        playback = sp.getUserCurrentPlayback()
+        print(f'Playback: {playback}')
+    except SpotifyRequestNoContent:
+        print(f'Playback: no playback')
+    print(f'Devices: {devices}')
+    
 
 
-sp = Spotify(AuthorizationCode(scope=['user-read-playback-state', 'user-modify-playback-state']))
-sp.getUserCurrentPlayback()
+
+sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
+
+while True:
+    getInfo(sp)
+    time.sleep(5)
+# print(sp.getUserCurrentPlayback())
 # devices = sp.getUserAvaliableDevices()
+# print(devices)
 # resp = sp.getCategories(limit=50, country='US')
 # print([x['name'] for x in resp['categories']['items']])
 
@@ -396,3 +475,91 @@ sp.getUserCurrentPlayback()
 # print(cat)
 # resp2 = sp.getCategoryPlaylist(cat)
 # print(resp2)
+
+# try:
+#     res = sp.startOrResumeUserPlayback(context_uri="spotify:album:0sNOF9WDwhWunNAHPD3Baj")
+#     print(res)
+# except SpotifyRequestError as err:
+#     if err.reason == 'NO_ACTIVE_DEVICE':
+#         print('Sorry, no active device')
+
+
+# sp.pauseUserPlayback()
+
+
+# {
+#     'device': {
+#         'id': '251d07d843622e7225d4a7fe941f0507ab681cb8', 
+#         'is_active': True, 
+#         'is_private_session': False, 
+#         'is_restricted': False, 
+#         'name': 'Web Player (Firefox)', 
+#         'type': 'Computer', 
+#         'volume_percent': 79
+#     }, 
+#     'shuffle_state': False, 
+#     'repeat_state': 'off', 
+#     'timestamp': 1595417496184, 
+#     'context': {
+#         'external_urls': {'spotify': 'https://open.spotify.com/album/1LL8dPJQn2BGCXuajpXQyD'}, 
+#         'href': 'https://api.spotify.com/v1/albums/1LL8dPJQn2BGCXuajpXQyD', 
+#         'type': 'album', 'uri': 'spotify:album:1LL8dPJQn2BGCXuajpXQyD'
+#     }, 
+#     'progress_ms': 187876, 
+#     'item': {
+#         'album': {
+#             'album_type': 'single', 
+#             'artists': [
+#                 {
+#                     'external_urls': {'spotify': 'https://open.spotify.com/artist/2S5hlvw4CMtMGswFtfdK15'}, 
+#                     'href': 'https://api.spotify.com/v1/artists/2S5hlvw4CMtMGswFtfdK15', 
+#                     'id': '2S5hlvw4CMtMGswFtfdK15', 
+#                     'name': 'Royal Blood', 
+#                     'type': 'artist', 
+#                     'uri': 'spotify:artist:2S5hlvw4CMtMGswFtfdK15'
+#                 }
+#             ], 
+#             'available_markets': [], 
+#             'external_urls': {'spotify': 'https://open.spotify.com/album/1LL8dPJQn2BGCXuajpXQyD'}, 
+#             'href': 'https://api.spotify.com/v1/albums/1LL8dPJQn2BGCXuajpXQyD', 
+#             'id': '1LL8dPJQn2BGCXuajpXQyD', 
+#             'images': [
+#                 {'height': 640, 'url': 'https://i.scdn.co/image/ab67616d0000b273901d44c660958ea4609a9206', 'width': 640}, 
+#                 {'height': 300, 'url': 'https://i.scdn.co/image/ab67616d00001e02901d44c660958ea4609a9206', 'width': 300}, 
+#                 {'height': 64, 'url': 'https://i.scdn.co/image/ab67616d00004851901d44c660958ea4609a9206', 'width': 64}
+#             ], 
+#             'name': 'Little Monster', 
+#             'release_date': '2014-02-10', 
+#             'release_date_precision': 'day', 
+#             'total_tracks': 1, 
+#             'type': 'album', 
+#             'uri': 'spotify:album:1LL8dPJQn2BGCXuajpXQyD'
+#         }, 
+#         'artists': [
+#             {
+#                 'external_urls': {'spotify': 'https://open.spotify.com/artist/2S5hlvw4CMtMGswFtfdK15'}, 
+#                 'href': 'https://api.spotify.com/v1/artists/2S5hlvw4CMtMGswFtfdK15', 
+#                 'id': '2S5hlvw4CMtMGswFtfdK15', 
+#                 'name': 'Royal Blood', 
+#                 'type': 'artist', 
+#                 'uri': 'spotify:artist:2S5hlvw4CMtMGswFtfdK15'
+#             }
+#         ], 
+#         'available_markets': [], 
+#         'disc_number': 1, 
+#         'duration_ms': 212309, 
+#         'explicit': False, 
+#         'external_ids': {'isrc': 'GBAHT1400096'}, 
+#         'external_urls': {'spotify': 'https://open.spotify.com/track/5aJsnDkoA8ZrUDWQn892KU'}, 
+#         'href': 'https://api.spotify.com/v1/tracks/5aJsnDkoA8ZrUDWQn892KU', 
+#         'id': '5aJsnDkoA8ZrUDWQn892KU', 
+#         'is_local': False, 
+#         'name': 'Little Monster', 
+#         'popularity': 30, 
+#         'preview_url': 'https://p.scdn.co/mp3-preview/5488e95a696c3b38d6ed5673dee854812aaaae49?cid=9f785def7d1e4f36abd8aee3edda5287', 
+#         'track_number': 1, 
+#         'type': 'track', 
+#         'uri': 'spotify:track:5aJsnDkoA8ZrUDWQn892KU'
+#     }, 
+#     'currently_playing_type': 'track', 
+#     'actions': {'disallows': {'resuming': True, 'skipping_prev': True}}, 'is_playing': True}
