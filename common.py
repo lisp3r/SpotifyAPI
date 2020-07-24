@@ -154,13 +154,13 @@ class AuthorizationCode(AuthFlowBase):
     def get_token(self) -> str:
         logger.info('Authorizing with Authorization Code Flow')
         self.__token_info = self._get_cached_token()
+        # logger.debug(f'Cached token: {str(self.__token_info)[:25]}...')
 
         if self.__token_info and Scope(self.__token_info['scope']) == self.scope:
             if self._is_token_expired():
                 logger.debug('Token expired. Refreshing token...')
                 self._refresh_authorization_token()
         else:
-            logger.debug('No cached token or scope is not correct')
             self._get_authorization_token()
         logger.info('Authorization complite')
         return self.__token_info['access_token']
@@ -350,6 +350,8 @@ class Spotify:
 
         return resp
 
+    ## Misc
+
     def getCategories(self, country=None, locale=None, limit=None, offset=None):
         payload = dict()
         if country:
@@ -380,13 +382,13 @@ class Spotify:
         resp = self.__api_request(method='GET', url_path=f'browse/categories/{category_id}/playlists', params=payload)
         return resp.json()
 
-    def getUserAvaliableDevices(self):
-        """ user-read-playback-state """
+    ## User
+
+    def getUserAvaliableDevices(self) -> dict:
         logger.debug(f'Getting avaliable devices')
         return self.__api_request(method='GET', url_path=f'me/player/devices').json()
 
     def getUserCurrentPlayback(self):
-        """ user-read-playback-state """
         logger.debug(f'Getting current playback')
 
         try:
@@ -394,6 +396,24 @@ class Spotify:
             res.raise_for_status()
         except SpotifyRequestError as err:
             logger.error(err)
+            raise
+        if res.status_code == 204:
+            raise SpotifyRequestNoContent
+        return res.json()
+
+    def getUserCurrentTrack(self, market=None):
+        """ Get the object currently being played on the user’s Spotify account."""
+        logger.debug(f"Get the User's Currently Playing Track")
+
+        query = None
+
+        if market:
+            query = {'market': market}
+
+        try:
+            res = self.__api_request(method='GET', url_path='me/player/currently-playing', params=query)
+        except SpotifyRequestError as err:
+            logger.error(res)
             raise
         if res.status_code == 204:
             raise SpotifyRequestNoContent
@@ -456,14 +476,20 @@ def getInfo(sp):
     except SpotifyRequestNoContent:
         print(f'Playback: no playback')
     print(f'Devices: {devices}')
-    
+
 
 
 
 sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
 
 while True:
-    getInfo(sp)
+    # getInfo(sp)
+    try:
+        trs = sp.getUserCurrentTrack()
+        artists = ', '.join([x['name'] for x in trs['item']['artists']])
+        print(f"{trs['item']['name']} by {artists}")
+    except SpotifyRequestNoContent:
+        print('Silence ...')
     time.sleep(5)
 # print(sp.getUserCurrentPlayback())
 # devices = sp.getUserAvaliableDevices()
@@ -485,81 +511,3 @@ while True:
 
 
 # sp.pauseUserPlayback()
-
-
-# {
-#     'device': {
-#         'id': '251d07d843622e7225d4a7fe941f0507ab681cb8', 
-#         'is_active': True, 
-#         'is_private_session': False, 
-#         'is_restricted': False, 
-#         'name': 'Web Player (Firefox)', 
-#         'type': 'Computer', 
-#         'volume_percent': 79
-#     }, 
-#     'shuffle_state': False, 
-#     'repeat_state': 'off', 
-#     'timestamp': 1595417496184, 
-#     'context': {
-#         'external_urls': {'spotify': 'https://open.spotify.com/album/1LL8dPJQn2BGCXuajpXQyD'}, 
-#         'href': 'https://api.spotify.com/v1/albums/1LL8dPJQn2BGCXuajpXQyD', 
-#         'type': 'album', 'uri': 'spotify:album:1LL8dPJQn2BGCXuajpXQyD'
-#     }, 
-#     'progress_ms': 187876, 
-#     'item': {
-#         'album': {
-#             'album_type': 'single', 
-#             'artists': [
-#                 {
-#                     'external_urls': {'spotify': 'https://open.spotify.com/artist/2S5hlvw4CMtMGswFtfdK15'}, 
-#                     'href': 'https://api.spotify.com/v1/artists/2S5hlvw4CMtMGswFtfdK15', 
-#                     'id': '2S5hlvw4CMtMGswFtfdK15', 
-#                     'name': 'Royal Blood', 
-#                     'type': 'artist', 
-#                     'uri': 'spotify:artist:2S5hlvw4CMtMGswFtfdK15'
-#                 }
-#             ], 
-#             'available_markets': [], 
-#             'external_urls': {'spotify': 'https://open.spotify.com/album/1LL8dPJQn2BGCXuajpXQyD'}, 
-#             'href': 'https://api.spotify.com/v1/albums/1LL8dPJQn2BGCXuajpXQyD', 
-#             'id': '1LL8dPJQn2BGCXuajpXQyD', 
-#             'images': [
-#                 {'height': 640, 'url': 'https://i.scdn.co/image/ab67616d0000b273901d44c660958ea4609a9206', 'width': 640}, 
-#                 {'height': 300, 'url': 'https://i.scdn.co/image/ab67616d00001e02901d44c660958ea4609a9206', 'width': 300}, 
-#                 {'height': 64, 'url': 'https://i.scdn.co/image/ab67616d00004851901d44c660958ea4609a9206', 'width': 64}
-#             ], 
-#             'name': 'Little Monster', 
-#             'release_date': '2014-02-10', 
-#             'release_date_precision': 'day', 
-#             'total_tracks': 1, 
-#             'type': 'album', 
-#             'uri': 'spotify:album:1LL8dPJQn2BGCXuajpXQyD'
-#         }, 
-#         'artists': [
-#             {
-#                 'external_urls': {'spotify': 'https://open.spotify.com/artist/2S5hlvw4CMtMGswFtfdK15'}, 
-#                 'href': 'https://api.spotify.com/v1/artists/2S5hlvw4CMtMGswFtfdK15', 
-#                 'id': '2S5hlvw4CMtMGswFtfdK15', 
-#                 'name': 'Royal Blood', 
-#                 'type': 'artist', 
-#                 'uri': 'spotify:artist:2S5hlvw4CMtMGswFtfdK15'
-#             }
-#         ], 
-#         'available_markets': [], 
-#         'disc_number': 1, 
-#         'duration_ms': 212309, 
-#         'explicit': False, 
-#         'external_ids': {'isrc': 'GBAHT1400096'}, 
-#         'external_urls': {'spotify': 'https://open.spotify.com/track/5aJsnDkoA8ZrUDWQn892KU'}, 
-#         'href': 'https://api.spotify.com/v1/tracks/5aJsnDkoA8ZrUDWQn892KU', 
-#         'id': '5aJsnDkoA8ZrUDWQn892KU', 
-#         'is_local': False, 
-#         'name': 'Little Monster', 
-#         'popularity': 30, 
-#         'preview_url': 'https://p.scdn.co/mp3-preview/5488e95a696c3b38d6ed5673dee854812aaaae49?cid=9f785def7d1e4f36abd8aee3edda5287', 
-#         'track_number': 1, 
-#         'type': 'track', 
-#         'uri': 'spotify:track:5aJsnDkoA8ZrUDWQn892KU'
-#     }, 
-#     'currently_playing_type': 'track', 
-#     'actions': {'disallows': {'resuming': True, 'skipping_prev': True}}, 'is_playing': True}
