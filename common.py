@@ -9,6 +9,11 @@
 # for idx, track in enumerate(results['tracks']['items']):
 #     print(idx, track['name'])
 
+__all__ = [
+    "SpotifyRequestError",
+    "SpotifyRequestNoContent",
+    "Spotify"
+]
 
 
 import os
@@ -480,17 +485,17 @@ def getInfo(sp):
 
 
 
-sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
+# sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
 
-while True:
-    # getInfo(sp)
-    try:
-        trs = sp.getUserCurrentTrack()
-        artists = ', '.join([x['name'] for x in trs['item']['artists']])
-        print(f"{trs['item']['name']} by {artists}")
-    except SpotifyRequestNoContent:
-        print('Silence ...')
-    time.sleep(5)
+# while True:
+#     # getInfo(sp)
+#     try:
+#         trs = sp.getUserCurrentTrack()
+#         artists = ', '.join([x['name'] for x in trs['item']['artists']])
+#         print(f"{trs['item']['name']} by {artists}")
+#     except SpotifyRequestNoContent:
+#         print('Silence ...')
+#     time.sleep(5)
 # print(sp.getUserCurrentPlayback())
 # devices = sp.getUserAvaliableDevices()
 # print(devices)
