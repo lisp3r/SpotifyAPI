@@ -91,7 +91,7 @@ class Spotify:
         if offset:
             payload.update({'offset': offset})
 
-        logger.debug(f'Getting categories: {", ".join(f"{x}={payload[x]}" for x in payload)}')
+        # logger.debug(f'Getting categories: {", ".join(f"{x}={payload[x]}" for x in payload)}')
 
         resp = self.__api_request(method='GET', url_path='browse/categories', params=payload)
         return resp.json()
@@ -105,7 +105,7 @@ class Spotify:
         if offset:
             payload.update({'offset': offset})
 
-        logger.debug(f'Getting {category_id} playlists: {", ".join(f"{x}={payload[x]}" for x in payload)}')
+        # logger.debug(f'Getting {category_id} playlists: {", ".join(f"{x}={payload[x]}" for x in payload)}')
 
         resp = self.__api_request(method='GET', url_path=f'browse/categories/{category_id}/playlists', params=payload)
         return resp.json()
@@ -113,11 +113,11 @@ class Spotify:
     ## User
 
     def getUserAvaliableDevices(self) -> dict:
-        logger.debug(f'Getting avaliable devices')
+        # logger.debug(f'Getting avaliable devices')
         return self.__api_request(method='GET', url_path=f'me/player/devices').json()
 
     def getUserCurrentPlayback(self):
-        logger.debug(f'Getting current playback')
+        # logger.debug(f'Getting current playback')
 
         try:
             res = self.__api_request(method='GET', url_path='me/player')
@@ -131,7 +131,7 @@ class Spotify:
 
     def getUserCurrentTrack(self, market=None):
         """ Get the object currently being played on the user’s Spotify account."""
-        logger.debug(f"Get the User's Currently Playing Track")
+        # logger.debug(f"Get the User's Currently Playing Track")
 
         query = None
 
@@ -149,7 +149,7 @@ class Spotify:
 
     def pauseUserPlayback(self, device_id=None) -> None:
         """ user-modify-playback-state"""
-        logger.debug(f'Pause user playback')
+        # logger.debug(f'Pause user playback')
 
         params = dict()
         if device_id:
@@ -171,7 +171,7 @@ class Spotify:
                    Example: "offset": {"uri": "spotify:track:1301WleyT98MSxVHPZCA6M"}
         position_ms:    Passing in a position that is greater than the length of the track will cause the player to start playing the next song.
         """
-        logger.debug(f"Start/Resume a User's Playback")
+        # logger.debug(f"Start/Resume a User's Playback")
         params = dict()
         if device_id:
             params.update({"device_id": device_id})
@@ -186,11 +186,10 @@ class Spotify:
             body.update({"position_ms": position_ms})
 
         if not body:
-            body = None
+            body = {}
 
         try:
             res = self.__api_request(method='PUT', url_path='me/player/play', params=params, data=json.dumps(body))
-            print(res)
         except SpotifyRequestError as err:
             logger.error(err)
             raise
