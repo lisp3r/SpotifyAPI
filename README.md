@@ -2,6 +2,14 @@
 
 > IMPORTANT! Many in this code is from by [Spotipy](https://github.com/plamere/spotipy/). This is an educational project aimed at the study of API architecture and coding skills improvement. If you are looking for Python Spotify API, take a look at [Spotipy](https://github.com/plamere/spotipy/).
 
+## API architecture
+
+auth.py
+
+- class AuthFlowBase() - base class for authorization methods. In API we have four authorization flows: Authorization Code Flow, Authorization Code With PKCE, Implicit Grant Flow and Client Credentials Flow. All the methods are implemented in a specific class inherited from AuthFlowBase().
+
+
+
 ## SpotifyAPI class
 
 ### User
