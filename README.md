@@ -178,8 +178,6 @@ Strange behavor. When Web App not played something before the new playback will 
 
   Scope: `user-modify-playback-state`
 
-
-
 ### Misc
 
 - getCategories()
