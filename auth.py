@@ -4,6 +4,8 @@ from urllib.parse import urlparse, parse_qs, urljoin, quote
 import time
 import json
 from base64 import b64encode
+import random
+import string
 
 from setup import CLIENT_CREDS_ENV_VARS
 from common import logger
@@ -12,6 +14,10 @@ from common import logger
 def _make_authorization_headers(client_id, client_secret):
     auth_header = b64encode(f'{client_id}:{client_secret}'.encode('ascii'))
     return {'Authorization': f'Basic {auth_header.decode("ascii")}'}
+
+def _make_scope(length):
+    letters_and_digits = string.ascii_letters + string.digits
+    return ''.join((random.choice(letters_and_digits) for i in range(length)))
 
 
 class Scope():
@@ -50,7 +56,6 @@ class AuthFlowRequestError(AuthFlowError):
 
     def __str__(self):
         return f'Return code: {self.code} ({self.error}). {self.error_descr}'
-
 
 class AuthFlowBase():
     def __init__(self, request_session):
@@ -164,10 +169,13 @@ class AuthorizationCode(AuthFlowBase):
         Return: code
         """
 
+        state = _make_scope(11)
+
         payload = {
             'client_id': self.client_id,
             'response_type': 'code',
             'redirect_uri': self.redirect_uri,
+            'state': state
         }
 
         if self.scope:
@@ -179,6 +187,9 @@ class AuthorizationCode(AuthFlowBase):
         resp = self._session.get(url=self.AUTH_CODE_URL, params=payload)
         print(f'Please open this url {resp.url} in your browser, log in Spotify, access scopes and put redirect url here')
         return_url = input('Return URL: ')
+
+        if parse_qs(urlparse(return_url).query)['state'][0] != state:
+            raise AuthFlowError('Wrong state peremeter')
 
         code = parse_qs(urlparse(return_url).query)['code']
         return code

@@ -182,3 +182,8 @@ Strange behavor. When Web App not played something before the new playback will 
 
 - getCategories()
 - getCategoryPlaylist()
+
+## TODO
+
+- [ ] Add state for authorization
+- [ ] Add 
