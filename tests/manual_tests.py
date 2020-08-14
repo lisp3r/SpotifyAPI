@@ -73,9 +73,6 @@ def main():
         # showingDevices(sp)
         # time.sleep(1)
 
-    oneplus_id = '6aacaef653a5761bb0e3f3d7b1aefd97faf9f91d'
-    firefox_id = '14b149aafed7b19e566f83cb9d07701b6c881500'
-
     blue_stahli_album = 'spotify:album:2dqVjHJzeMr18V9VJKRtTj'
 
     setPlaybackForAJustConnectedDevice(sp, blue_stahli_album)
