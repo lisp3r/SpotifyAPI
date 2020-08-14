@@ -2,6 +2,8 @@
 
 > IMPORTANT! Many in this code is from by [Spotipy](https://github.com/plamere/spotipy/). This is an educational project aimed at the study of API architecture and coding skills improvement. If you are looking for Python Spotify API, take a look at [Spotipy](https://github.com/plamere/spotipy/).
 
+[Spotify IDs](https://developer.spotify.com/documentation/web-api/#spotify-uris-and-ids)
+
 ## API architecture
 
 auth.py
@@ -185,5 +187,7 @@ Strange behavor. When Web App not played something before the new playback will 
 
 ## TODO
 
-- [ ] Add state for authorization
-- [ ] Add 
+- [x] Add state for authorization
+- [x] Add PKCE auth
+- [ ] Add SpotifyObject() class and classes for tracks, albums e.g.
+- [ ] Create Radio testing app
