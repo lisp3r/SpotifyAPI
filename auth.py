@@ -52,7 +52,7 @@ class AuthFlowBase():
     AUTH_CODE_URL = 'https://accounts.spotify.com/authorize'
     AUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
 
-    def __init__(self, request_session):
+    def __init__(self, request_session, cache_token_path='.cached_spotify_token'):
         if isinstance(request_session, requests.Session):
             self._session = request_session
         else:
@@ -60,6 +60,8 @@ class AuthFlowBase():
                 self._session = requests.Session()
             else:
                 self._session = requests.api
+        self.cache_token_path = cache_token_path
+        self.token_info = None
 
     def __del__(self):
         """Make sure the connection (pool) gets closed"""
@@ -101,14 +103,35 @@ class AuthFlowBase():
         self._redirect_uri = self._enshure_creds(val, 'redirect_uri')
 
     @classmethod
-    def _make_authorization_headers(cls, client_id, client_secret):
+    def _make_authorization_headers(cls, client_id: str, client_secret: str) -> dict:
         auth_header = b64encode(f'{client_id}:{client_secret}'.encode('ascii'))
         return {'Authorization': f'Basic {auth_header.decode("ascii")}'}
 
     @classmethod
-    def _make_rand_string(cls, length):
+    def _make_rand_string(cls, length: int) -> str:
         letters_and_digits = string.ascii_letters + string.digits
         return ''.join((random.choice(letters_and_digits) for i in range(length)))
+
+    def _get_cached_token(self) -> None:
+        token_info = None
+        try:
+            with open(self.cache_token_path, 'r') as f:
+                token_info = json.load(f)
+                logger.info('Got cached token')
+        except (IOError, json.decoder.JSONDecodeError) as e:
+            logger.warning(f'Can not get token from {self.cache_token_path}: {e}')
+        self.token_info = token_info
+
+    def _is_token_expired(self) -> bool:
+        now = int(time.time())
+        return self.token_info["expires_at"] - now < 60
+
+    def _cache_token(self) -> None:
+        try:
+            with open(self.cache_token_path, 'w') as f:
+                json.dump(self.token_info, f)
+        except IOError as e:
+            logger.warning(f'Can not save token in {self.cache_token_path}: {e}')
 
 class AuthorizationCode(AuthFlowBase):
     """ Authorization Code
@@ -130,33 +153,27 @@ class AuthorizationCode(AuthFlowBase):
                  cache_token_path='.cached_spotify_token'
                  ):
 
-        super(AuthorizationCode, self).__init__(request_session)
+        super(AuthorizationCode, self).__init__(request_session, cache_token_path)
 
         self.client_id = client_id
         self.client_secret = client_secret
         self.scope = Scope(scope)
-        self.__token_info = None
         self.redirect_uri = redirect_uri
         self.show_dialog = show_dialog
-        self.cache_token_path=cache_token_path
 
     def get_token(self) -> str:
         logger.info('Authorizing with Authorization Code Flow')
-        self.__token_info = self._get_cached_token()
-        # logger.debug(f'Cached token: {str(self.__token_info)[:25]}...')
+        self._get_cached_token()
+        # logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
 
-        if self.__token_info and Scope(self.__token_info['scope']) == self.scope:
+        if self.token_info and Scope(self.token_info['scope']) == self.scope:
             if self._is_token_expired():
                 logger.debug('Token expired. Refreshing token...')
                 self._refresh_authorization_token()
         else:
             self._get_authorization_token()
         logger.info('Authorization complite')
-        return self.__token_info['access_token']
-
-    def _is_token_expired(self) -> bool:
-        now = int(time.time())
-        return self.__token_info["expires_at"] - now < 60
+        return self.token_info['access_token']
 
     def _get_authorization_code(self) -> str:
         """ Step 1. Have your application request authorization; the user logs in and authorizes access
@@ -234,8 +251,8 @@ class AuthorizationCode(AuthFlowBase):
             result = resp.json()
             logger.error('Getting responce token error')
             raise AuthFlowRequestError(error=result['error'], error_descr=result['error_description'], code=resp.status_code)
-        self.__token_info = resp.json() # {'access_token': 'BQ...', 'token_type': 'Bearer', 'expires_in': 3600, 'refresh_token': 'AQ...', 'scope': '...'}
-        self.__token_info['expires_at'] = int(time.time()) + self.__token_info["expires_in"]
+        self.token_info = resp.json() # {'access_token': 'BQ...', 'token_type': 'Bearer', 'expires_in': 3600, 'refresh_token': 'AQ...', 'scope': '...'}
+        self.token_info['expires_at'] = int(time.time()) + self.token_info["expires_in"]
 
         if cache_token:
             self._cache_token()
@@ -249,7 +266,7 @@ class AuthorizationCode(AuthFlowBase):
 
         data = {
             'grant_type': 'refresh_token',
-            'refresh_token': self.__token_info['refresh_token'],
+            'refresh_token': self.token_info['refresh_token'],
             'redirect_uri': self.redirect_uri
         }
         resp = self._session.post(url=self.AUTH_TOKEN_URL, headers=headers, data=data)
@@ -257,27 +274,11 @@ class AuthorizationCode(AuthFlowBase):
             result = resp.json()
             logger.error('Getting responce token error')
             raise AuthFlowRequestError(error=result['error'], error_descr=result['error_description'], code=resp.status_code)
-        self.__token_info = resp.json()
-        self.__token_info['expires_at'] = int(time.time()) + self.__token_info["expires_in"]
+        self.token_info = resp.json()
+        self.token_info['expires_at'] = int(time.time()) + self.token_info["expires_in"]
         if cache_token:
             self._cache_token()
 
-    def _cache_token(self) -> None:
-        try:
-            with open(self.cache_token_path, 'w') as f:
-                json.dump(self.__token_info, f)
-        except IOError as e:
-            logger.warning(f'Can not save token in {self.cache_token_path}: {e}')
-
-    def _get_cached_token(self) -> None:
-        token_info = None
-        try:
-            with open(self.cache_token_path, 'r') as f:
-                token_info = json.load(f)
-                logger.info('Got cached token')
-        except (IOError, json.decoder.JSONDecodeError) as e:
-            logger.warning(f'Can not get token from {self.cache_token_path}: {e}')
-        return token_info
 
 class AuthorizationCodeWithPKCE(AuthFlowBase):
     """ Authorization Code Flow with Proof Key for Code Exchange (PKCE)
@@ -300,16 +301,25 @@ class AuthorizationCodeWithPKCE(AuthFlowBase):
                  redirect_uri=None,
                  cache_token_path='.cached_spotify_token'
                  ):
-        super(AuthorizationCodeWithPKCE, self).__init__(request_session)
+        super(AuthorizationCodeWithPKCE, self).__init__(request_session, cache_token_path)
 
         self.client_id = client_id
         self.scope = Scope(scope)
-        self.__token_info = None
         self.redirect_uri = redirect_uri
-        self.cache_token_path=cache_token_path
 
     def get_token(self) -> str:
         logger.info('Authorizing with PKCE Authorization Code Flow')
+
+        self._get_cached_token()
+        if self.token_info and Scope(self.token_info['scope']) == self.scope:
+            if self._is_token_expired():
+                logger.debug('Token expired. Refreshing token...')
+                # self._refresh_authorization_token()
+        else:
+            # self._get_authorization_token()
+            pass
+        logger.info('Authorization complite')
+        return self.token_info['access_token']
 
 class ImplicitGrant(AuthFlowBase):
     pass
