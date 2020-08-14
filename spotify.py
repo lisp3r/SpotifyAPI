@@ -1,7 +1,7 @@
 import json
 import requests
 from requests.adapters import HTTPAdapter
-from urllib.parse import urljoin
+from urllib.parse import urljoin, quote
 
 from common import logger
 
@@ -79,6 +79,45 @@ class Spotify:
         return resp
 
     ## Misc
+
+    def search(self, raw_q, q_type, market=None, limit=None, offset=None, include_external=False):
+
+        """ Search for an Item
+
+        raw_q:   String with operators and flters:
+                 q='album:arrival artist:abba'
+                 q="doom metal"
+
+        q_type:  String with one of many types
+                 Example: q_type=album, q_type=album,track
+
+        Returns: 
+        For each type provided in the type parameter, the response body contains an array of artist objects / simplified album objects / track objects / simplified show objects / simplified episode objects wrapped in a paging object in JSON.
+        """
+
+        avaliable_types = ['album', 'artist', 'playlist', 'track', 'show', 'episode']
+
+        if q_type not in avaliable_types:
+            raise SpotifyError(f'"q_type" must be {", ".join([x for x in avaliable_types])}')
+
+        payload = {'q': raw_q, 'type': q_type}
+
+        if market:
+            payload.update({'market': market})
+        if limit:
+            payload.update({'limit': limit})
+        if include_external:
+            payload.update({'locale': include_external})
+        if offset:
+            payload.update({'offset': offset})
+
+        try:
+            resp = self.__api_request(method='GET', url_path='search', params=payload)
+            resp.raise_for_status()
+        except SpotifyRequestError as err:
+            logger.error(err)
+            raise
+        return resp.json()
 
     def getCategories(self, country=None, locale=None, limit=None, offset=None):
         payload = dict()
