@@ -4,6 +4,7 @@ from urllib.parse import urlparse, parse_qs, urljoin, quote
 import time
 import json
 from base64 import b64encode, urlsafe_b64encode
+import hashlib
 import random
 import string
 
@@ -212,7 +213,7 @@ class AuthorizationCode(AuthFlowBase):
             code = parse_qs(urlparse(return_url).query)['code']
         except KeyError:
             error = parse_qs(urlparse(return_url).query)['error']
-            raise AuthFlowError('Authentification failed. Access deined')
+            raise AuthFlowError(f'Authentification failed. {error}')
         return code
 
     def _get_authorization_token(self, cache_token=True) -> None:
@@ -279,7 +280,6 @@ class AuthorizationCode(AuthFlowBase):
         if cache_token:
             self._cache_token()
 
-
 class AuthorizationCodeWithPKCE(AuthFlowBase):
     """ Authorization Code Flow with Proof Key for Code Exchange (PKCE)
 
@@ -311,15 +311,118 @@ class AuthorizationCodeWithPKCE(AuthFlowBase):
         logger.info('Authorizing with PKCE Authorization Code Flow')
 
         self._get_cached_token()
+
         if self.token_info and Scope(self.token_info['scope']) == self.scope:
             if self._is_token_expired():
                 logger.debug('Token expired. Refreshing token...')
-                # self._refresh_authorization_token()
+                self._refresh_authorization_token()
         else:
-            # self._get_authorization_token()
-            pass
+            self._get_authorization_token()
         logger.info('Authorization complite')
         return self.token_info['access_token']
+
+    def _generate_consts(self) -> tuple:
+        """ Step 1 """
+
+        length = random.randint(33, 96)
+        rand_bytes = self._make_rand_string(length).encode()
+
+        code_verifier = urlsafe_b64encode(rand_bytes).decode('utf-8').replace('=', '')
+
+        code_challenge_digest = hashlib.sha256(code_verifier.encode('utf-8')).digest()
+        code_challenge = urlsafe_b64encode(code_challenge_digest).decode('utf-8').replace('=', '')
+
+        return (code_verifier, code_challenge)
+
+    def _get_authorization_code(self, code_challenge: str) -> str:
+        """ Step 1. Have your application request authorization; the user logs in and authorizes access
+
+        GET https://accounts.spotify.com/authorize
+
+        Requared: client_id, response_type=code, redirect_uri, code_challenge_method=S256, code_challenge
+        Optional: state, scope(https://developer.spotify.com/documentation/general/guides/scopes/)
+
+        Return: code
+        """
+
+        state = self._make_rand_string(11)
+
+        payload = {
+            'client_id': self.client_id,
+            'response_type': 'code',
+            'redirect_uri': self.redirect_uri,
+            'code_challenge_method': 'S256',
+            'code_challenge': code_challenge,
+            'state': state
+        }
+
+        if self.scope:
+            payload.update({'scope': self.scope.get_quoted()})
+
+        resp = self._session.get(url=self.AUTH_CODE_URL, params=payload)
+        print(f'Please open this url {resp.url} in your browser, log in Spotify, access scopes and put redirect url here')
+        return_url = input('Return URL: ')
+
+        if parse_qs(urlparse(return_url).query)['state'][0] != state:
+            raise AuthFlowError('Wrong state peremeter')
+
+        try:
+            code = parse_qs(urlparse(return_url).query)['code']
+        except KeyError:
+            error = parse_qs(urlparse(return_url).query)['error']
+            raise AuthFlowError('Authentification failed. Access deined')
+        return code
+
+    def _get_authorization_token(self, cache_token=True) -> str:
+
+        """ Step 2
+        """
+
+        logger.info('Get authorization token')
+
+        code_verifier, code_challenge = self._generate_consts()
+
+        data = {
+            'client_id': self.client_id,
+            'grant_type': 'authorization_code',
+            'code': self._get_authorization_code(code_challenge),
+            'redirect_uri': self.redirect_uri,
+            'code_verifier': code_verifier
+        }
+
+        resp = self._session.post(url=self.AUTH_TOKEN_URL, data=data)
+        if resp.status_code != 200:
+            result = resp.json()
+            logger.error('Getting responce token error')
+            raise AuthFlowRequestError(error=result['error'], error_descr=result['error_description'], code=resp.status_code)
+
+        self.token_info = resp.json()
+        self.token_info['expires_at'] = int(time.time()) + self.token_info["expires_in"]
+
+        if cache_token:
+            self._cache_token()
+
+    def _refresh_authorization_token(self, cache_token=True) -> None:
+        """ Requesting a refreshed access token; Spotify returns a new access token to your app
+        """
+
+        logger.info('Refresh expired token')
+
+        data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': self.token_info['refresh_token'],
+            'redirect_uri': self.redirect_uri
+        }
+        resp = self._session.post(url=self.AUTH_TOKEN_URL, data=data)
+        if resp.status_code != 200:
+            result = resp.json()
+            logger.error('Getting responce token error')
+            raise AuthFlowRequestError(error=result['error'], error_descr=result['error_description'], code=resp.status_code)
+        self.token_info = resp.json()
+        self.token_info['expires_at'] = int(time.time()) + self.token_info["expires_in"]
+        if cache_token:
+            self._cache_token()
+
 
 class ImplicitGrant(AuthFlowBase):
     pass
