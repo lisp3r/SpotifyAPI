@@ -3,7 +3,7 @@ import requests
 from urllib.parse import urlparse, parse_qs, urljoin, quote
 import time
 import json
-from base64 import b64encode
+from base64 import b64encode, urlsafe_b64encode
 import random
 import string
 
@@ -15,7 +15,7 @@ def _make_authorization_headers(client_id, client_secret):
     auth_header = b64encode(f'{client_id}:{client_secret}'.encode('ascii'))
     return {'Authorization': f'Basic {auth_header.decode("ascii")}'}
 
-def _make_scope(length):
+def _make_rand_string(length):
     letters_and_digits = string.ascii_letters + string.digits
     return ''.join((random.choice(letters_and_digits) for i in range(length)))
 
@@ -169,7 +169,7 @@ class AuthorizationCode(AuthFlowBase):
         Return: code
         """
 
-        state = _make_scope(11)
+        state = _make_rand_string(11)
 
         payload = {
             'client_id': self.client_id,
@@ -191,7 +191,11 @@ class AuthorizationCode(AuthFlowBase):
         if parse_qs(urlparse(return_url).query)['state'][0] != state:
             raise AuthFlowError('Wrong state peremeter')
 
-        code = parse_qs(urlparse(return_url).query)['code']
+        try:
+            code = parse_qs(urlparse(return_url).query)['code']
+        except KeyError:
+            error = parse_qs(urlparse(return_url).query)['error']
+            raise AuthFlowError('Authentification failed. Access deined')
         return code
 
     def _get_authorization_token(self, cache_token=True) -> None:
@@ -276,7 +280,18 @@ class AuthorizationCode(AuthFlowBase):
         return token_info
 
 class AuthorizationCodeWithPKCE(AuthFlowBase):
-    pass
+    """ Authorization Code Flow with Proof Key for Code Exchange (PKCE)
+
+    for mobile and desktop applications where it is unsafe to store your client secret. It provides your app with an access token that can be refreshed.
+
+    Flow:
+
+    1. Constants generation
+
+    - code verifier -- a cryptographically random string between 43 and 128 characters in length. It can contain letters, digits, underscores, periods, hyphens, or tildes
+
+    - code challenger -- base64url encoded code verifier's SHA256 hash.
+    """
 
 class ImplicitGrant(AuthFlowBase):
     pass
