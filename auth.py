@@ -411,8 +411,9 @@ class AuthorizationCodeWithPKCE(AuthFlowBase):
         data = {
             'grant_type': 'refresh_token',
             'refresh_token': self.token_info['refresh_token'],
-            'redirect_uri': self.redirect_uri
+            'client_id': self.client_id
         }
+
         resp = self._session.post(url=self.AUTH_TOKEN_URL, data=data)
         if resp.status_code != 200:
             result = resp.json()
