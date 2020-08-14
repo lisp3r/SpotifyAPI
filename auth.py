@@ -11,15 +11,6 @@ from setup import CLIENT_CREDS_ENV_VARS
 from common import logger
 
 
-def _make_authorization_headers(client_id, client_secret):
-    auth_header = b64encode(f'{client_id}:{client_secret}'.encode('ascii'))
-    return {'Authorization': f'Basic {auth_header.decode("ascii")}'}
-
-def _make_rand_string(length):
-    letters_and_digits = string.ascii_letters + string.digits
-    return ''.join((random.choice(letters_and_digits) for i in range(length)))
-
-
 class Scope():
     def __init__(self, scope_list=None):
         if isinstance(scope_list, list):
@@ -58,6 +49,9 @@ class AuthFlowRequestError(AuthFlowError):
         return f'Return code: {self.code} ({self.error}). {self.error_descr}'
 
 class AuthFlowBase():
+    AUTH_CODE_URL = 'https://accounts.spotify.com/authorize'
+    AUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
+
     def __init__(self, request_session):
         if isinstance(request_session, requests.Session):
             self._session = request_session
@@ -106,6 +100,15 @@ class AuthFlowBase():
         # implement val checking
         self._redirect_uri = self._enshure_creds(val, 'redirect_uri')
 
+    @classmethod
+    def _make_authorization_headers(cls, client_id, client_secret):
+        auth_header = b64encode(f'{client_id}:{client_secret}'.encode('ascii'))
+        return {'Authorization': f'Basic {auth_header.decode("ascii")}'}
+
+    @classmethod
+    def _make_rand_string(cls, length):
+        letters_and_digits = string.ascii_letters + string.digits
+        return ''.join((random.choice(letters_and_digits) for i in range(length)))
 
 class AuthorizationCode(AuthFlowBase):
     """ Authorization Code
@@ -116,9 +119,6 @@ class AuthorizationCode(AuthFlowBase):
     You do:   Prompt your user to a webpage where they can choose to grant you access to their data.
     You get:  An access token and a refresh token.
     """
-
-    AUTH_CODE_URL = 'https://accounts.spotify.com/authorize'
-    AUTH_TOKEN_URL = 'https://accounts.spotify.com/api/token'
 
     def __init__(self,
                  client_id=None,
@@ -169,7 +169,7 @@ class AuthorizationCode(AuthFlowBase):
         Return: code
         """
 
-        state = _make_rand_string(11)
+        state = self._make_rand_string(11)
 
         payload = {
             'client_id': self.client_id,
@@ -221,7 +221,7 @@ class AuthorizationCode(AuthFlowBase):
 
         logger.info('Get authorization token')
 
-        headers = _make_authorization_headers(self._client_id, self._client_secret)
+        headers = self._make_authorization_headers(self._client_id, self._client_secret)
 
         data = {
             'grant_type': 'authorization_code',
@@ -245,7 +245,7 @@ class AuthorizationCode(AuthFlowBase):
         """
 
         logger.info('Refresh expired token')
-        headers = _make_authorization_headers(self._client_id, self._client_secret)
+        headers = self._make_authorization_headers(self._client_id, self._client_secret)
 
         data = {
             'grant_type': 'refresh_token',
@@ -279,19 +279,8 @@ class AuthorizationCode(AuthFlowBase):
             logger.warning(f'Can not get token from {self.cache_token_path}: {e}')
         return token_info
 
-class AuthorizationCodeWithPKCE(AuthFlowBase):
-    """ Authorization Code Flow with Proof Key for Code Exchange (PKCE)
 
-    for mobile and desktop applications where it is unsafe to store your client secret. It provides your app with an access token that can be refreshed.
 
-    Flow:
-
-    1. Constants generation
-
-    - code verifier -- a cryptographically random string between 43 and 128 characters in length. It can contain letters, digits, underscores, periods, hyphens, or tildes
-
-    - code challenger -- base64url encoded code verifier's SHA256 hash.
-    """
 
 class ImplicitGrant(AuthFlowBase):
     pass
