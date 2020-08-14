@@ -8,9 +8,27 @@ auth.py
 
 - class AuthFlowBase() - base class for authorization methods. In API we have four authorization flows: Authorization Code Flow, Authorization Code With PKCE, Implicit Grant Flow and Client Credentials Flow. All the methods are implemented in a specific class inherited from AuthFlowBase().
 
+> TODO: finish this
 
+## Working with Spotify API
 
-## SpotifyAPI class
+This is some functions from `Spotify` class with [API reference's](https://developer.spotify.com/documentation/web-api/reference/) descriotions. Wery helpful for understanding.
+
+Before starting some words about how to Spotify works.
+
+All the user's devices can only be used one at a time.
+
+Devices have unique IDs refrashing every time device is connecting.
+
+Device is active when web player/app is opened. API request (`getUserAvaliableDevices()`) returns devices (ID, name and status for every one) in this case even when nothing is playing.
+
+Playback is a listening queue. Playback is one for all the devices.
+
+API request (`getUserCurrentPlayback()`) returns a playback when device is active and playing something OR it has track ou a pause. In other words if device inactive or nothing was played since activation the request returns NOTHING.
+
+It could be bitten by Start or Resume User Playback request with device ID it request's body. Device should be opened (and get new ID). Then request with that ID (`startOrResumeUserPlayback(device_id="45667...", context_uri="spotify:album:fgtg...")`) sets new playback for a device avan if nothing was played on a device before.
+
+Strange behavor. When Web App not played something before the new playback will be on pause too. But in device object `is_active` field will be True.
 
 ### User
 
@@ -152,9 +170,15 @@ auth.py
   }
   ```
 
-
 - pauseUserPlayback()
+
 - startOrResumeUserPlayback()
+
+  Start a new context or resume current playback on the user’s active device.
+
+  Scope: `user-modify-playback-state`
+
+
 
 ### Misc
 
