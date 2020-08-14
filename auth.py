@@ -423,7 +423,6 @@ class AuthorizationCodeWithPKCE(AuthFlowBase):
         if cache_token:
             self._cache_token()
 
-
 class ImplicitGrant(AuthFlowBase):
     pass
 

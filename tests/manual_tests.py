@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath('..'))
 
 from spotify import Spotify, SpotifyRequestNoContent, SpotifyRequestError
 from setup import CLIENT_CREDS_ENV_VARS
-from auth import AuthorizationCode
+from auth import AuthorizationCode, AuthorizationCodeWithPKCE
 
 
 def showingDevices(sp):
@@ -64,7 +64,8 @@ def setPlaybackForAJustConnectedDevice(sp, context):
         print('Devices: No active devices')
 
 def main():
-    sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
+    # sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
+    sp = Spotify(AuthorizationCodeWithPKCE(scope='user-read-playback-state user-modify-playback-state'))
 
     # while True:
         # showingPlayback(sp)
