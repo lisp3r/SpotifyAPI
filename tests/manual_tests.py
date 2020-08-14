@@ -63,9 +63,51 @@ def setPlaybackForAJustConnectedDevice(sp, context):
     else:
         print('Devices: No active devices')
 
+# def printArtist(artist_url):
+#     res = dict()
+#     for artist in artist_url['artists']:
+#         artist_info = ''
+#         for item in artist['items']:
+#             artist_info += f"{}"
+#             artist_info.append({
+#                 'name': item['name'],
+#                 'uri': item['uri'],
+#                 'genres': item['genres']
+#             })
+#         res.update({
+            
+#         })
+
+
+
+# def printTrack(track_json, verbose=False):
+#     # tracks :  ['href', 'items', 'limit', 'next', 'offset', 'previous', 'total']
+#     track_json = track_json['tracks']
+#     next_url = track_json['next']
+
+#     info = ''
+
+#     for item in track_json['items']:
+#         if verbose:
+#             track_info = f"{item['name']} ({item['uri']})"
+#             artists = ', '.join([f"{x['name']} ({x['uri']})" for x in item['artists']])
+#             album = f'{item["album"]["name"]} ({item["album"]["uri"]})'
+#         else:
+#             track_info = f"{item['name']}"
+#             artists = ', '.join([f"{x['name']}" for x in item['artists']])
+#             album = f'{item["album"]["name"]}'
+#         info += f'{track_info} by {artists} from album ({album})\n'
+#     return info
+
 def main():
     # sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
     sp = Spotify(AuthorizationCodeWithPKCE(scope='user-read-playback-state user-modify-playback-state'))
+
+    res = sp.search('blue stahli', 'artist')
+    print(res)
+    # res = sp.search('track:true colors year:2014-2017', 'track')
+    # printTrack(res)
+
 
     # while True:
         # showingPlayback(sp)
@@ -73,9 +115,9 @@ def main():
         # showingDevices(sp)
         # time.sleep(1)
 
-    blue_stahli_album = 'spotify:album:2dqVjHJzeMr18V9VJKRtTj'
+    # blue_stahli_album = 'spotify:album:2dqVjHJzeMr18V9VJKRtTj'
 
-    setPlaybackForAJustConnectedDevice(sp, blue_stahli_album)
+    # setPlaybackForAJustConnectedDevice(sp, blue_stahli_album)
 
     # showingDevices(sp)
     # showingPlayback(sp)
