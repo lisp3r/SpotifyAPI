@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import json
 
 sys.path.append(os.path.abspath('.'))
 sys.path.append(os.path.abspath('..'))
@@ -8,6 +9,73 @@ sys.path.append(os.path.abspath('..'))
 from spotify import Spotify, SpotifyRequestNoContent, SpotifyRequestError
 from setup import CLIENT_CREDS_ENV_VARS
 from auth import AuthorizationCode, AuthorizationCodeWithPKCE
+
+
+class SpotifyObjectError(Exception):
+    pass
+
+
+class SpotifyObjects:
+    FIELDS = ['href', 'limit', 'offset', 'previous', 'total']
+
+    @property
+    def json_obj(self):
+        return self.__json_obj
+
+    @json_obj.setter
+    def json_obj(self, _obj):
+        self.__json_obj = _obj
+        for f in self.FIELDS:
+            try:
+                self.__setattr__(f, self.__json_obj[f])
+            except KeyError:
+                pass
+
+    @classmethod
+    def from_json(cls, obj_json):
+        assert isinstance(obj_json, dict), '"obj_json" mast be dict()'
+
+        obj_type = list(obj_json.keys())[0]
+
+        for child in cls.__subclasses__():
+            if child._is_like(obj_type):
+                return child(obj_json[obj_type])
+        raise SpotifyObjectError(f'No subclass {obj_type}')
+
+    @classmethod
+    def _is_like(cls, line):
+        return cls.__name__.lower() == line.lower()
+
+
+class Tracks(SpotifyObjects):
+    def __init__(self, _obj):
+        self.json_obj = _obj
+
+
+class Artists(SpotifyObjects):
+    def __init__(self, _obj):
+        self.json_obj = _obj
+
+
+class SpotifyObject:
+    FIELDS = ['external_urls', 'followers', 'genres', 'href', 'id', 'images', 'name', 'popularity', 'type', 'url']
+
+    def __init__(self, _obj):
+        for f in self.FIELDS:
+            if(attr := _obj.get(f)):
+                self.__setattr__(f, attr)
+
+
+# class Track(SpotifyObject):
+#     def __init__(self, _obj):
+#         self.json_obj = _obj
+#         print(self.json_obj)
+
+class Artist(SpotifyObject):
+
+    def __init__(self, _obj):
+        self.json_obj = _obj
+
 
 
 def showingDevices(sp):
@@ -99,12 +167,14 @@ def setPlaybackForAJustConnectedDevice(sp, context):
 #         info += f'{track_info} by {artists} from album ({album})\n'
 #     return info
 
-def main():
+# def main():
+    # a = SpotifyObjects().from_json({'name': 'Ultranumb', 'artist': 'Blue Stahli'}, 'track')
+    # b = SpotifyObjects().from_json(, 'artist')
     # sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
-    sp = Spotify(AuthorizationCodeWithPKCE(scope='user-read-playback-state user-modify-playback-state'))
+    # sp = Spotify(AuthorizationCodeWithPKCE(scope='user-read-playback-state user-modify-playback-state'))
 
-    res = sp.search('blue stahli', 'artist')
-    print(res)
+    # res = sp.search('blue stahli', 'artist')
+    # print(res)
     # res = sp.search('track:true colors year:2014-2017', 'track')
     # printTrack(res)
 
@@ -143,5 +213,5 @@ def main():
 
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
