@@ -24,12 +24,16 @@ class SpotifyObjects:
 
     @json_obj.setter
     def json_obj(self, _obj):
+        if isinstance(_obj, list):
+            _obj = {'items': _obj}
         self.__json_obj = _obj
         for f in self.FIELDS:
             try:
-                self.__setattr__(f, self.__json_obj[f])
+                self.__setattr__(f, _obj[f])
             except KeyError:
                 pass
+        self.item_type = self.__class__.__name__[:-1]
+        self.items = {self.item_type.lower(): self.json_obj['items']}
 
     @classmethod
     def from_json(cls, obj_json):
@@ -46,36 +50,62 @@ class SpotifyObjects:
     def _is_like(cls, line):
         return cls.__name__.lower() == line.lower()
 
+    @property
+    def items(self):
+        return self.__items
+
+    @items.setter
+    def items(self, items_dict=None):
+        if not items_dict:
+            self.__items = None
+        self.__items = []
+        for child in SpotifySingleObject.__subclasses__():
+            if child.__name__.lower() == self.item_type.lower():
+                for i in items_dict:
+                    self.__items.append(
+                        child(i)
+                    )
+                    return
+        raise SpotifyObjectError(f'No item class {self.item_type}')
+
+    def __str__(self) -> str:
+        msg = ''
+        for f in self.FIELDS:
+            try:
+                msg += f'{f}: {self.__getattribute__(f)}\n'
+            except AttributeError:
+                pass
+        return msg
 
 class Tracks(SpotifyObjects):
     def __init__(self, _obj):
         self.json_obj = _obj
-
 
 class Artists(SpotifyObjects):
     def __init__(self, _obj):
         self.json_obj = _obj
 
 
-class SpotifyObject:
-    FIELDS = ['external_urls', 'followers', 'genres', 'href', 'id', 'images', 'name', 'popularity', 'type', 'url']
+class SpotifySingleObject:
+    def __init__(self, **kwargs):
+        for f, var in kwargs.items():
+            self.__setattr__(f, var)
 
-    def __init__(self, _obj):
-        for f in self.FIELDS:
-            if(attr := _obj.get(f)):
-                self.__setattr__(f, attr)
+    def __str__(self) -> str:
+        msg = ''
+        for key, attr in self.__dict__.items():
+            msg += f'{key}: {attr}\n'
+        return msg
 
 
-# class Track(SpotifyObject):
-#     def __init__(self, _obj):
-#         self.json_obj = _obj
-#         print(self.json_obj)
-
-class Artist(SpotifyObject):
-
+class Track(SpotifySingleObject):
     def __init__(self, _obj):
         self.json_obj = _obj
 
+
+class Artist(SpotifySingleObject):
+    def __init__(self, _obj):
+        self.json_obj = _obj
 
 
 def showingDevices(sp):
