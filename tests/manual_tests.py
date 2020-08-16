@@ -13,6 +13,50 @@ from auth import AuthorizationCode, AuthorizationCodeWithPKCE
 from common import logger
 
 
+class SpotifyObjects:
+    def __init__(self, _obj):
+        assert isinstance(_obj, dict)
+        self.json_obj = _obj
+
+    @property
+    def json_obj(self):
+        return self.__json_obj
+
+    @json_obj.setter
+    def json_obj(self, _obj):
+        for obj_type in _obj:
+            if obj_type in [x.__name__.lower() for x in SpotifyObject.__subclasses__]:
+
+
+
+
+class SpotifyObject:
+    def __init__(self, **fields):
+        for f, var in fields.items(): self.__setattr__(f, var)
+
+    def __str__(self) -> str:
+        msg = ''
+        for key, attr in self.__dict__.items():
+            msg += f'{key}: {attr}\n'
+        return msg
+
+class Track(SpotifyObject):
+    def __init__(self, **fields):
+        super().__init__(fields)
+
+class Artist(SpotifyObject):
+    def __init__(self, **fields):
+        super().__init__(fields)
+
+class Album(SpotifyObject):
+    def __init__(self, **fields):
+        super().__init__(fields)
+
+class Image(SpotifyObject):
+    def __init__(self, **fields):
+        super().__init__(fields)
+
+
 class SpotifyObjectError(Exception):
     pass
 
@@ -97,36 +141,7 @@ class Images(SpotifyObjects):
         self.json_obj = _obj
 
 
-class SpotifySingleObject:
-    def __init__(self, **kwargs):
-        for f, var in kwargs.items():
-            self.__setattr__(f, var)
 
-    def __str__(self) -> str:
-        msg = ''
-        for key, attr in self.__dict__.items():
-            msg += f'{key}: {attr}\n'
-        return msg
-
-
-class Track(SpotifySingleObject):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class Artist(SpotifySingleObject):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class Image(SpotifySingleObject):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class Album(SpotifySingleObject):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
 
 def showingDevices(sp):
