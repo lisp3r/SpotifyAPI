@@ -10,6 +10,8 @@ from spotify import Spotify, SpotifyRequestNoContent, SpotifyRequestError
 from setup import CLIENT_CREDS_ENV_VARS
 from auth import AuthorizationCode, AuthorizationCodeWithPKCE
 
+from common import logger
+
 
 class SpotifyObjectError(Exception):
     pass
@@ -99,13 +101,18 @@ class SpotifySingleObject:
 
 
 class Track(SpotifySingleObject):
-    def __init__(self, _obj):
-        self.json_obj = _obj
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class Artist(SpotifySingleObject):
-    def __init__(self, _obj):
-        self.json_obj = _obj
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class Album(SpotifySingleObject):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 def showingDevices(sp):
