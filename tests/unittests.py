@@ -81,21 +81,24 @@ class SpotifyObjectsTestCase(unittest.TestCase):
         self.assertEqual(res.offset, artists['artists']['offset'])
         self.assertEqual(res.previous, artists['artists']['previous'])
         self.assertEqual(res.total, artists['artists']['total'])
-        self.assertEqual(res.item_type, 'Artist')
+        self.assertEqual(res.items_type, 'artist')
+        print(res)
 
     def test_createGood2(self):
         artists = {"artists": {"items": [{"external_urls": {"spotify": "https://open.spotify.com/artist/1Xyo4u8uXC1ZmMpatF05PJ"},"href": "https://api.spotify.com/v1/artists/1Xyo4u8uXC1ZmMpatF05PJ","id": "1Xyo4u8uXC1ZmMpatF05PJ","name": "The Weeknd","type": "artist","uri": "spotify:artist:1Xyo4u8uXC1ZmMpatF05PJ"}]}}
 
         res = SpotifyObjects().from_json(artists)
         self.assertEqual(res.json_obj, artists['artists'])
-        self.assertEqual(res.item_type, 'Artist')
+        self.assertEqual(res.items_type, 'artist')
+        print(res)
 
     def test_createGood3(self):
         artists = {"artists": [{"external_urls": {"spotify": "https://open.spotify.com/artist/1Xyo4u8uXC1ZmMpatF05PJ"},"href": "https://api.spotify.com/v1/artists/1Xyo4u8uXC1ZmMpatF05PJ","id": "1Xyo4u8uXC1ZmMpatF05PJ","name": "The Weeknd","type": "artist","uri": "spotify:artist:1Xyo4u8uXC1ZmMpatF05PJ"}]}
 
         res = SpotifyObjects().from_json(artists)
         # self.assertEqual(res3.json_obj, artists['artists'])
-        # self.assertEqual(res3.item_type, 'Artist')
+        # self.assertEqual(res3.items_type, 'Artist')
+        print(res)
 
     def test_createBad(self):
         artists = {"href": "https://api.spotify.com/v1/search?query=blue+stahli&type=artist&offset=0&limit=20", "items": [{"external_urls": {"spotify": "https://open.spotify.com/artist/4DWnSG0RYPAds8EIKY26q3"}, "followers": {"href": "None", "total": 110197}, "genres": ["cyberpunk", "future rock", "industrial metal"], "href": "https://api.spotify.com/v1/artists/4DWnSG0RYPAds8EIKY26q3", "id": "4DWnSG0RYPAds8EIKY26q3", "images": [{"height": 640, "url": "https://i.scdn.co/image/902be24d539756d7befc72303f9bfb97ccd9a927", "width": 640}, {"height": 320, "url": "https://i.scdn.co/image/6f04176bcd05c5df733e18c02d53d512e53e7cb8", "width": 320}, {"height": 160, "url": "https://i.scdn.co/image/9ee95b155ab534afa9c55ea558faf42c093aaaac", "width": 160}], "name": "Blue Stahli", "popularity": 54, "type": "artist", "uri": "spotify:artist:4DWnSG0RYPAds8EIKY26q3"}, {"external_urls": {"spotify": "https://open.spotify.com/artist/2o7YZp3hNkLmCbugObLTkx"}, "followers": {"href": "None", "total": 7}, "genres": [], "href": "https://api.spotify.com/v1/artists/2o7YZp3hNkLmCbugObLTkx", "id": "2o7YZp3hNkLmCbugObLTkx", "images": [{"height": 640, "url": "https://i.scdn.co/image/ab67616d0000b273775453923b812072e02614a3", "width": 640}, {"height": 300, "url": "https://i.scdn.co/image/ab67616d00001e02775453923b812072e02614a3", "width": 300}, {"height": 64, "url": "https://i.scdn.co/image/ab67616d00004851775453923b812072e02614a3", "width": 64}], "name": "Blue Stahli Commentary", "popularity": 0, "type": "artist", "uri": "spotify:artist:2o7YZp3hNkLmCbugObLTkx"}], "limit": 20, "next": "None", "offset": 0, "previous": "None", "total": 3}
@@ -107,20 +110,20 @@ class SpotifySingleObjectsTestCase(unittest.TestCase):
         items = {"external_urls": {"spotify": "https://open.spotify.com/artist/4DWnSG0RYPAds8EIKY26q3"}, "followers": {"href": "None", "total": 110197}, "genres": ["cyberpunk", "future rock", "industrial metal"], "href": "https://api.spotify.com/v1/artists/4DWnSG0RYPAds8EIKY26q3", "id": "4DWnSG0RYPAds8EIKY26q3", "images": [{"height": 640, "url": "https://i.scdn.co/image/902be24d539756d7befc72303f9bfb97ccd9a927", "width": 640}, {"height": 320, "url": "https://i.scdn.co/image/6f04176bcd05c5df733e18c02d53d512e53e7cb8", "width": 320}, {"height": 160, "url": "https://i.scdn.co/image/9ee95b155ab534afa9c55ea558faf42c093aaaac", "width": 160}], "name": "Blue Stahli", "popularity": 54, "type": "artist", "uri": "spotify:artist:4DWnSG0RYPAds8EIKY26q3"}
 
         res = Artist(**items)
-        print(res)
+        self.assertEqual(res.external_urls, items['external_urls'])
 
     def test_createGood2(self):
         items = {"external_urls": {"spotify": "https://open.spotify.com/artist/1Xyo4u8uXC1ZmMpatF05PJ"},"href": "https://api.spotify.com/v1/artists/1Xyo4u8uXC1ZmMpatF05PJ","id": "1Xyo4u8uXC1ZmMpatF05PJ","name": "The Weeknd","type": "artist","uri": "spotify:artist:1Xyo4u8uXC1ZmMpatF05PJ"}
 
         res = Artist(**items)
-        print(res)
+        self.assertEqual(res.id, items['id'])
 
 
 suite1 = unittest.TestLoader().loadTestsFromTestCase(SpotifyObjectsTestCase)
 suite2 = unittest.TestLoader().loadTestsFromTestCase(SpotifySingleObjectsTestCase)
 runner = unittest.TextTestRunner(verbosity=2)
 runner.run(suite1)
-runner.run(suite2)
+# runner.run(suite2)
 
 """
 Objects Index

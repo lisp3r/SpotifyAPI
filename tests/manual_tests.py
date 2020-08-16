@@ -34,8 +34,8 @@ class SpotifyObjects:
                 self.__setattr__(f, _obj[f])
             except KeyError:
                 pass
-        self.item_type = self.__class__.__name__[:-1]
-        self.items = {self.item_type.lower(): self.json_obj['items']}
+        self.items_type = self.__class__.__name__[:-1].lower()
+        self.items = {self.items_type.lower(): self.json_obj['items']}
 
     @classmethod
     def from_json(cls, obj_json):
@@ -61,14 +61,14 @@ class SpotifyObjects:
         if not items_dict:
             self.__items = None
         self.__items = []
-        for child in SpotifySingleObject.__subclasses__():
-            if child.__name__.lower() == self.item_type.lower():
-                for i in items_dict:
+        for subclass in SpotifySingleObject.__subclasses__():
+            if subclass.__name__.lower() == self.items_type:
+                for item in items_dict[self.items_type]:
                     self.__items.append(
-                        child(i)
+                        subclass(**item)
                     )
                     return
-        raise SpotifyObjectError(f'No item class {self.item_type}')
+        raise SpotifyObjectError(f'No item class {self.items_type}')
 
     def __str__(self) -> str:
         msg = ''
@@ -77,13 +77,22 @@ class SpotifyObjects:
                 msg += f'{f}: {self.__getattribute__(f)}\n'
             except AttributeError:
                 pass
+        if self.items_type:
+            msg += f'{self.items_type}:\n{" ".join([x.__str__() for x in self.items])}'
         return msg
+
 
 class Tracks(SpotifyObjects):
     def __init__(self, _obj):
         self.json_obj = _obj
 
+
 class Artists(SpotifyObjects):
+    def __init__(self, _obj):
+        self.json_obj = _obj
+
+
+class Images(SpotifyObjects):
     def __init__(self, _obj):
         self.json_obj = _obj
 
@@ -106,6 +115,11 @@ class Track(SpotifySingleObject):
 
 
 class Artist(SpotifySingleObject):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class Image(SpotifySingleObject):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
