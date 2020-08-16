@@ -28,20 +28,20 @@ logger.level = logging.DEBUG
 #         s = Scope(_scope)
 #         self.assertIn(s.get_quoted(), _get_quoted_variants)
 
-#     def test_nonConditionalScopes(self):
-#         _scope1 = []
-#         _scope2 = ''
-#         _scope3 = None
-#         _scope4 = {'scope': 'user-read-playback-state'}
+    # def test_nonConditionalScopes(self):
+    #     _scope1 = []
+    #     _scope2 = ''
+    #     _scope3 = None
+    #     _scope4 = {'scope': 'user-read-playback-state'}
 
-#         for x in [_scope1, _scope2, _scope3, _scope4]:
-#             s = Scope(x)
-#             self.assertEqual(s.scope, [])
+    #     for x in [_scope1, _scope2, _scope3, _scope4]:
+    #         s = Scope(x)
+    #         self.assertEqual(s.scope, [])
 
-#     def test_equal(self):
-#         s1 = Scope(['user-read-playback-state', 'user-modify-playback-state'])
-#         s2 = Scope('user-read-playback-state user-modify-playback-state')
-#         self.assertTrue(s1 == s2)
+    # def test_equal(self):
+    #     s1 = Scope(['user-read-playback-state', 'user-modify-playback-state'])
+    #     s2 = Scope('user-read-playback-state user-modify-playback-state')
+    #     self.assertTrue(s1 == s2)
 
 
 # class AuthTestCase(unittest.TestCase):
