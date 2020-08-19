@@ -13,132 +13,115 @@ from auth import AuthorizationCode, AuthorizationCodeWithPKCE
 from common import logger
 
 
-class SpotifyObjects:
-    def __init__(self, _obj):
-        assert isinstance(_obj, dict)
-        self.json_obj = _obj
+# class SpotifyObject:
+#     def __init__(self, **fields):
+#         for f, var in fields.items(): self.__setattr__(f, var)
 
-    @property
-    def json_obj(self):
-        return self.__json_obj
+#     def __str__(self) -> str:
+#         msg = ''
+#         for key, attr in self.__dict__.items():
+#             msg += f'{key}: {attr}\n'
+#         return msg
 
-    @json_obj.setter
-    def json_obj(self, _obj):
-        for obj_type in _obj:
-            if obj_type in [x.__name__.lower() for x in SpotifyObject.__subclasses__]:
+# class Track(SpotifyObject):
+#     def __init__(self, **fields):
+#         super().__init__(fields)
 
+# class Artist(SpotifyObject):
+#     def __init__(self, **fields):
+#         super().__init__(fields)
 
+# class Album(SpotifyObject):
+#     def __init__(self, **fields):
+#         super().__init__(fields)
 
-
-class SpotifyObject:
-    def __init__(self, **fields):
-        for f, var in fields.items(): self.__setattr__(f, var)
-
-    def __str__(self) -> str:
-        msg = ''
-        for key, attr in self.__dict__.items():
-            msg += f'{key}: {attr}\n'
-        return msg
-
-class Track(SpotifyObject):
-    def __init__(self, **fields):
-        super().__init__(fields)
-
-class Artist(SpotifyObject):
-    def __init__(self, **fields):
-        super().__init__(fields)
-
-class Album(SpotifyObject):
-    def __init__(self, **fields):
-        super().__init__(fields)
-
-class Image(SpotifyObject):
-    def __init__(self, **fields):
-        super().__init__(fields)
+# class Image(SpotifyObject):
+#     def __init__(self, **fields):
+#         super().__init__(fields)
 
 
-class SpotifyObjectError(Exception):
-    pass
+# class SpotifyObjectError(Exception):
+#     pass
 
 
-class SpotifyObjects:
-    FIELDS = ['href', 'limit', 'offset', 'previous', 'total']
+# class SpotifyObjects:
+#     FIELDS = ['href', 'limit', 'offset', 'previous', 'total']
 
-    @property
-    def json_obj(self):
-        return self.__json_obj
+#     @property
+#     def json_obj(self):
+#         return self.__json_obj
 
-    @json_obj.setter
-    def json_obj(self, _obj):
-        if isinstance(_obj, list):
-            _obj = {'items': _obj}
-        self.__json_obj = _obj
-        for f in self.FIELDS:
-            try:
-                self.__setattr__(f, _obj[f])
-            except KeyError:
-                pass
-        self.items_type = self.__class__.__name__[:-1].lower()
-        self.items = {self.items_type.lower(): self.json_obj['items']}
+#     @json_obj.setter
+#     def json_obj(self, _obj):
+#         if isinstance(_obj, list):
+#             _obj = {'items': _obj}
+#         self.__json_obj = _obj
+#         for f in self.FIELDS:
+#             try:
+#                 self.__setattr__(f, _obj[f])
+#             except KeyError:
+#                 pass
+#         self.items_type = self.__class__.__name__[:-1].lower()
+#         self.items = {self.items_type.lower(): self.json_obj['items']}
 
-    @classmethod
-    def from_json(cls, obj_json):
-        assert isinstance(obj_json, dict), '"obj_json" mast be dict()'
+#     @classmethod
+#     def from_json(cls, obj_json):
+#         assert isinstance(obj_json, dict), '"obj_json" mast be dict()'
 
-        obj_type = list(obj_json.keys())[0]
+#         obj_type = list(obj_json.keys())[0]
 
-        for child in cls.__subclasses__():
-            if child._is_like(obj_type):
-                return child(obj_json[obj_type])
-        raise SpotifyObjectError(f'No subclass {obj_type}')
+#         for child in cls.__subclasses__():
+#             if child._is_like(obj_type):
+#                 return child(obj_json[obj_type])
+#         raise SpotifyObjectError(f'No subclass {obj_type}')
 
-    @classmethod
-    def _is_like(cls, line):
-        return cls.__name__.lower() == line.lower()
+#     @classmethod
+#     def _is_like(cls, line):
+#         return cls.__name__.lower() == line.lower()
 
-    @property
-    def items(self):
-        return self.__items
+#     @property
+#     def items(self):
+#         return self.__items
 
-    @items.setter
-    def items(self, items_dict=None):
-        if not items_dict:
-            self.__items = None
-        self.__items = []
-        for subclass in SpotifySingleObject.__subclasses__():
-            if subclass.__name__.lower() == self.items_type:
-                for item in items_dict[self.items_type]:
-                    self.__items.append(
-                        subclass(**item)
-                    )
-                    return
-        raise SpotifyObjectError(f'No item class {self.items_type}')
+#     @items.setter
+#     def items(self, items_dict=None):
+#         if not items_dict:
+#             self.__items = None
+#         self.__items = []
+#         for subclass in SpotifySingleObject.__subclasses__():
+#             if subclass.__name__.lower() == self.items_type:
+#                 for item in items_dict[self.items_type]:
+#                     self.__items.append(
+#                         subclass(**item)
+#                     )
+#                     return
+#         raise SpotifyObjectError(f'No item class {self.items_type}')
 
-    def __str__(self) -> str:
-        msg = ''
-        for f in self.FIELDS:
-            try:
-                msg += f'{f}: {self.__getattribute__(f)}\n'
-            except AttributeError:
-                pass
-        if self.items_type:
-            msg += f'{self.items_type}:\n{" ".join([x.__str__() for x in self.items])}'
-        return msg
-
-
-class Tracks(SpotifyObjects):
-    def __init__(self, _obj):
-        self.json_obj = _obj
+#     def __str__(self) -> str:
+#         msg = ''
+#         for f in self.FIELDS:
+#             try:
+#                 msg += f'{f}: {self.__getattribute__(f)}\n'
+#             except AttributeError:
+#                 pass
+#         if self.items_type:
+#             msg += f'{self.items_type}:\n{" ".join([x.__str__() for x in self.items])}'
+#         return msg
 
 
-class Artists(SpotifyObjects):
-    def __init__(self, _obj):
-        self.json_obj = _obj
+# class Tracks(SpotifyObjects):
+#     def __init__(self, _obj):
+#         self.json_obj = _obj
 
 
-class Images(SpotifyObjects):
-    def __init__(self, _obj):
-        self.json_obj = _obj
+# class Artists(SpotifyObjects):
+#     def __init__(self, _obj):
+#         self.json_obj = _obj
+
+
+# class Images(SpotifyObjects):
+#     def __init__(self, _obj):
+#         self.json_obj = _obj
 
 
 
@@ -233,16 +216,16 @@ def setPlaybackForAJustConnectedDevice(sp, context):
 #         info += f'{track_info} by {artists} from album ({album})\n'
 #     return info
 
-# def main():
+def main():
     # a = SpotifyObjects().from_json({'name': 'Ultranumb', 'artist': 'Blue Stahli'}, 'track')
     # b = SpotifyObjects().from_json(, 'artist')
     # sp = Spotify(AuthorizationCode(scope='user-read-playback-state user-modify-playback-state'))
-    # sp = Spotify(AuthorizationCodeWithPKCE(scope='user-read-playback-state user-modify-playback-state'))
+    sp = Spotify(AuthorizationCodeWithPKCE(scope='user-read-playback-state user-modify-playback-state'))
 
     # res = sp.search('blue stahli', 'artist')
     # print(res)
-    # res = sp.search('track:true colors year:2014-2017', 'track')
-    # printTrack(res)
+    res = sp.search('track:true colors year:2014-2017', 'track')
+    print(res)
 
 
     # while True:
@@ -279,5 +262,5 @@ def setPlaybackForAJustConnectedDevice(sp, context):
 
 
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
