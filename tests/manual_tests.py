@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import json
+import abc
 
 sys.path.append(os.path.abspath('.'))
 sys.path.append(os.path.abspath('..'))
@@ -11,6 +12,53 @@ from setup import CLIENT_CREDS_ENV_VARS
 from auth import AuthorizationCode, AuthorizationCodeWithPKCE
 
 from common import logger
+
+# Artist, Album, Track, Image, Copyright, External ID, External URL, 
+class SpotifyObject():
+    TYPE = None
+    @classmethod
+    def from_json(cls, json_obj):
+        assert isinstance(json_obj, dict)
+        if (obj_type := json_obj.get('type')):
+            for child in cls.__subclasses__():
+                if child.is_type(obj_type):
+                    return child(**json_obj)
+        else:
+            # Image, External URL
+            print('No "type" field in "json_obj" object')
+            exit(1)
+
+    @classmethod
+    def is_type(cls, _type): return cls.TYPE == _type
+
+class Artist(SpotifyObject):
+    TYPE = 'artist'
+
+    def __init__(self, **kwargs):
+        for arg in kwargs:
+            setattr(self, arg, kwargs[arg])
+        self.is_simplifyed = False if kwargs.get('followers') else True
+
+    def __str__(self):
+        return self.name
+
+class Album:
+    def __init__(self, **kwargs):
+        for arg in kwargs:
+            setattr(self, arg, kwargs[arg])
+        self.is_simplifyed = False if kwargs.get('tracks') else True
+
+    @property
+    def artists(self):
+        return self.__artists
+
+    @artists.setter
+    def artists(self, _artists):
+        self.__artists = [SpotifyObject.from_json(artist) for artist in _artists]
+
+    def __str__(self):
+        artists = ', '.join([x.__str__() for x in self.artists])
+        return f'{self.name} by {artists}'
 
 
 # class SpotifyObject:
