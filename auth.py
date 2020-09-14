@@ -8,8 +8,8 @@ import hashlib
 import random
 import string
 
-from setup import CLIENT_CREDS_ENV_VARS
-from common import logger
+from .setup import CLIENT_CREDS_ENV_VARS
+from .common import logger
 
 
 class Scope():
