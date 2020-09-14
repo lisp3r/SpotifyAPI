@@ -149,6 +149,10 @@ class Spotify:
         resp = self.__api_request(method='GET', url_path=f'browse/categories/{category_id}/playlists', params=payload)
         return resp.json()
 
+    def getAvalGenres(self):
+        resp = self.__api_request(method='GET', url_path='recommendations/available-genre-seeds')
+        return resp.json()
+
     ## User
 
     def getUserAvaliableDevices(self) -> dict:
