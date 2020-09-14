@@ -8,9 +8,15 @@ import hashlib
 import random
 import string
 
-from .setup import CLIENT_CREDS_ENV_VARS
-from .common import logger
+from common import logger
 
+
+CLIENT_CREDS_ENV_VARS = {
+    "client_id": "SPOTIFY_CLIENT_ID",
+    "client_secret": "SPOTIFY_CLIENT_SECRET",
+    "client_username": "SPOTIFY_CLIENT_USERNAME",
+    "redirect_uri": "SPOTIFY_REDIRECT_URI",
+}
 
 class Scope():
     def __init__(self, scope_list=None):

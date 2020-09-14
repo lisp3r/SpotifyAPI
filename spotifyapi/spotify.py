@@ -3,7 +3,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib.parse import urljoin, quote
 
-from .common import logger
+from common import logger
 
 
 __all__ = [
