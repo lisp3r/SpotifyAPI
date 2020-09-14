@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh: long_description = fh.read()
 
 setuptools.setup(
-    name="spotify-api",
+    name="spotifyapi",
     version="0.1",
     author="lisp3r",
     author_email="none",
