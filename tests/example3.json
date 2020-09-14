@@ -1,0 +1,120 @@
+{
+    "tracks": {
+        "href": "https://api.spotify.com/v1/search?query=mr.kitty+-+after+dark&type=track&offset=0&limit=20",
+        "items": [
+            {
+                "album": {
+                    "album_type": "album",
+                    "artists": [
+                        {
+                            "external_urls": {"spotify": "https://open.spotify.com/artist/0pWwt5vGNzezEhfAcc420Y"},
+                            "href": "https://api.spotify.com/v1/artists/0pWwt5vGNzezEhfAcc420Y",
+                            "id": "0pWwt5vGNzezEhfAcc420Y",
+                            "name": "Mr.Kitty",
+                            "type": "artist",
+                            "uri": "spotify:artist:0pWwt5vGNzezEhfAcc420Y"
+                        }
+                    ],
+                    "available_markets": [],
+                    "external_urls": {"spotify": "https://open.spotify.com/album/0PLo7Nd9uUa6shrWWOmJsQ"},
+                    "href": "https://api.spotify.com/v1/albums/0PLo7Nd9uUa6shrWWOmJsQ",
+                    "id": "0PLo7Nd9uUa6shrWWOmJsQ",
+                    "images": [
+                        {"height": 640, "url": "https://i.scdn.co/image/ab67616d0000b27385e3ceaa88ceb59eb9866b81", "width": 640},
+                        {"height": 300, "url": "https://i.scdn.co/image/ab67616d00001e0285e3ceaa88ceb59eb9866b81", "width": 300},
+                        {"height": 64, "url": "https://i.scdn.co/image/ab67616d0000485185e3ceaa88ceb59eb9866b81", "width": 64}
+                    ],
+                    "name": "Time",
+                    "release_date": "2014-08-08",
+                    "release_date_precision": "day",
+                    "total_tracks": 15,
+                    "type": "album",
+                    "uri": "spotify:album:0PLo7Nd9uUa6shrWWOmJsQ"
+                },
+                "artists": [
+                    {
+                        "external_urls": {"spotify": "https://open.spotify.com/artist/0pWwt5vGNzezEhfAcc420Y"},
+                        "href": "https://api.spotify.com/v1/artists/0pWwt5vGNzezEhfAcc420Y",
+                        "id": "0pWwt5vGNzezEhfAcc420Y",
+                        "name": "Mr.Kitty",
+                        "type": "artist",
+                        "uri": "spotify:artist:0pWwt5vGNzezEhfAcc420Y"
+                    }
+                ],
+                "available_markets": [],
+                "disc_number": 1,
+                "duration_ms": 257147,
+                "explicit": "False",
+                "external_ids": {"isrc": "GBKPL1412568"},
+                "external_urls": {"spotify": "https://open.spotify.com/track/0zCgWGmDF0aih5qexATyBn"},
+                "href": "https://api.spotify.com/v1/tracks/0zCgWGmDF0aih5qexATyBn",
+                "id": "0zCgWGmDF0aih5qexATyBn",
+                "is_local": "False",
+                "name": "After Dark",
+                "popularity": 58,
+                "preview_url": "https://p.scdn.co/mp3-preview/8887dda9139a0b5ff0333a2bbd30ddc255b922d7?cid=9f785def7d1e4f36abd8aee3edda5287",
+                "track_number": 9,
+                "type": "track",
+                "uri": "spotify:track:0zCgWGmDF0aih5qexATyBn"
+            },
+            {
+                "album": {
+                    "album_type": "album",
+                    "artists": [
+                        {
+                            "external_urls": {"spotify": "https://open.spotify.com/artist/0pWwt5vGNzezEhfAcc420Y"},
+                            "href": "https://api.spotify.com/v1/artists/0pWwt5vGNzezEhfAcc420Y",
+                            "id": "0pWwt5vGNzezEhfAcc420Y",
+                            "name": "Mr.Kitty",
+                            "type": "artist",
+                            "uri": "spotify:artist:0pWwt5vGNzezEhfAcc420Y"
+                        }
+                    ],
+                    "available_markets": [],
+                    "external_urls": {"spotify": "https://open.spotify.com/album/63TYyeXlBYoYKNvE6rT3hI"},
+                    "href": "https://api.spotify.com/v1/albums/63TYyeXlBYoYKNvE6rT3hI",
+                    "id": "63TYyeXlBYoYKNvE6rT3hI",
+                    "images": [
+                        {"height": 640, "url": "https://i.scdn.co/image/ab67616d0000b273b492477206075438e0751176", "width": 640}, {"height": 300, "url": "https://i.scdn.co/image/ab67616d00001e02b492477206075438e0751176", "width": 300}, {"height": 64, "url": "https://i.scdn.co/image/ab67616d00004851b492477206075438e0751176", "width": 64}
+                    ],
+                    "name": "Time",
+                    "release_date": "2014-10-06",
+                    "release_date_precision": "day",
+                    "total_tracks": 15,
+                    "type": "album",
+                    "uri": "spotify:album:63TYyeXlBYoYKNvE6rT3hI"
+                },
+                "artists": [
+                    {
+                        "external_urls": {"spotify": "https://open.spotify.com/artist/0pWwt5vGNzezEhfAcc420Y"},
+                        "href": "https://api.spotify.com/v1/artists/0pWwt5vGNzezEhfAcc420Y",
+                        "id": "0pWwt5vGNzezEhfAcc420Y",
+                        "name": "Mr.Kitty", 
+                        "type": "artist", 
+                        "uri": "spotify:artist:0pWwt5vGNzezEhfAcc420Y"
+                    }
+                ], 
+                "available_markets": [], 
+                "disc_number": 1, 
+                "duration_ms": 259146, 
+                "explicit": "False", 
+                "external_ids": {"isrc": "USY251660155"}, 
+                "external_urls": {"spotify": "https://open.spotify.com/track/2LKOHdMsL0K9KwcPRlJK2v"}, 
+                "href": "https://api.spotify.com/v1/tracks/2LKOHdMsL0K9KwcPRlJK2v", 
+                "id": "2LKOHdMsL0K9KwcPRlJK2v", 
+                "is_local": "False", 
+                "name": "After Dark", 
+                "popularity": 62, 
+                "preview_url": "https://p.scdn.co/mp3-preview/fde347b48eb7f3177c635afcc4947b286b646356?cid=9f785def7d1e4f36abd8aee3edda5287", 
+                "track_number": 9, 
+                "type": "track", 
+                "uri": "spotify:track:2LKOHdMsL0K9KwcPRlJK2v"
+            }
+        ], 
+        "limit": 20, 
+        "next": "None", 
+        "offset": 0, 
+        "previous": "None", 
+        "total": 2
+    }
+}
