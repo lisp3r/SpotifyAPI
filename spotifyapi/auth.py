@@ -8,7 +8,7 @@ import hashlib
 import random
 import string
 
-from common import logger
+from spotifyapi.common import logger
 
 
 CLIENT_CREDS_ENV_VARS = {
