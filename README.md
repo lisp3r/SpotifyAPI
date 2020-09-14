@@ -14,6 +14,8 @@ auth.py
 
 ## Working with Spotify API
 
+[Spotify Objects description](SpotifyObjects.md)
+
 This is some functions from `Spotify` class with [API reference's](https://developer.spotify.com/documentation/web-api/reference/) descriotions. Wery helpful for understanding.
 
 Before starting some words about how to Spotify works.
