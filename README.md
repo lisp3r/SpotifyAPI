@@ -1,6 +1,6 @@
 # Spotify API
 
-> IMPORTANT! Many in this code is from by [Spotipy](https://github.com/plamere/spotipy/). This is an educational project aimed at the study of API architecture and coding skills improvement. If you are looking for Python Spotify API, take a look at [Spotipy](https://github.com/plamere/spotipy/).
+> IMPORTANT! Many in this code is from [Spotipy](https://github.com/plamere/spotipy/). This is an educational project aimed at the study of API architecture and coding skills improvement. If you are looking for Python Spotify API, take a look at [Spotipy](https://github.com/plamere/spotipy/).
 
 [Spotify IDs](https://developer.spotify.com/documentation/web-api/#spotify-uris-and-ids)
 
