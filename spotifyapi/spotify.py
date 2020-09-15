@@ -7,6 +7,7 @@ from spotifyapi.common import logger
 
 
 __all__ = [
+    "SpotifyError",
     "SpotifyRequestError",
     "SpotifyRequestNoContent",
     "Spotify"

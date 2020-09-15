@@ -171,15 +171,17 @@ class AuthorizationCode(AuthFlowBase):
     def get_token(self) -> str:
         logger.info('Authorizing with Authorization Code Flow')
         self._get_cached_token()
-        # logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
+        logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
+
+        if not self.token_info:
+            self._get_authorization_token()
 
         if self.token_info and Scope(self.token_info['scope']) == self.scope:
             if self._is_token_expired():
-                logger.debug('Token expired. Refreshing token...')
+                logger.debug(f'Token expired at {time.ctime(int(self.token_info["expires_at"]))}. Refreshing token...')
                 self._refresh_authorization_token()
-        else:
-            self._get_authorization_token()
         logger.info('Authorization complite')
+        logger.debug(f'Token will be expires at {time.ctime(int(self.token_info["expires_at"]))}')
         return self.token_info['access_token']
 
     def _get_authorization_code(self) -> str:
@@ -276,6 +278,7 @@ class AuthorizationCode(AuthFlowBase):
             'refresh_token': self.token_info['refresh_token'],
             'redirect_uri': self.redirect_uri
         }
+
         resp = self._session.post(url=self.AUTH_TOKEN_URL, headers=headers, data=data)
         if resp.status_code != 200:
             result = resp.json()

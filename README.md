@@ -193,3 +193,5 @@ Strange behavor. When Web App not played something before the new playback will 
 - [x] Add PKCE auth
 - [ ] Add SpotifyObject() class and classes for tracks, albums e.g.
 - [ ] Create Radio testing app
+- [ ] Merge master to all the branches
+- [ ] common modile should not be showing in the package
