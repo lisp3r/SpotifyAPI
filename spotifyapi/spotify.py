@@ -62,8 +62,7 @@ class Spotify:
     def _get_headers(self) -> dict:
         if not self.auth_manager:
             return {}
-        if not self.__token:
-            self.__token = self.auth_manager.get_token()
+        self.__token = self.auth_manager.get_token()
         return {'Authorization': f'Bearer {self.__token}'}
 
     def __api_request(self, method, url_path, headers=None, params=None, data=None):
