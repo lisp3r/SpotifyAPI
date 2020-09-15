@@ -318,16 +318,19 @@ class AuthorizationCodeWithPKCE(AuthFlowBase):
 
     def get_token(self) -> str:
         logger.info('Authorizing with PKCE Authorization Code Flow')
-
         self._get_cached_token()
+        logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
+
+        if not self.token_info:
+            self._get_authorization_token()
 
         if self.token_info and Scope(self.token_info['scope']) == self.scope:
             if self._is_token_expired():
                 logger.debug('Token expired. Refreshing token...')
                 self._refresh_authorization_token()
-        else:
-            self._get_authorization_token()
+
         logger.info('Authorization complite')
+        logger.debug(f'Token will be expires at {time.ctime(int(self.token_info["expires_at"]))}')
         return self.token_info['access_token']
 
     def _generate_consts(self) -> tuple:
