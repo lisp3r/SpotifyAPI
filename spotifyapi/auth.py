@@ -140,6 +140,9 @@ class AuthFlowBase():
         except IOError as e:
             logger.warning(f'Can not save token in {self.cache_token_path}: {e}')
 
+    def _clean_cache(self) -> None:
+        os.remove(self.cache_token_path)
+
 class AuthorizationCode(AuthFlowBase):
     """ Authorization Code
     
@@ -177,7 +180,14 @@ class AuthorizationCode(AuthFlowBase):
             if Scope(self.token_info['scope']) == self.scope:
                 if self._is_token_expired():
                     logger.debug(f'Token expired at {time.ctime(int(self.token_info["expires_at"]))}. Refreshing token...')
-                    self._refresh_authorization_token()
+                    try:
+                        self._refresh_authorization_token()
+                    except AuthFlowRequestError as err:
+                        if err.code == 400:
+                            logger.debug(err)
+                            logger.debug('Cleaning cache, trying to get another token')
+                            self._clean_cache()
+                            self._get_authorization_token()
             else:
                 logger.info('Scopes are not compatible. Getting new token...')
                 self._get_authorization_token()
@@ -186,7 +196,6 @@ class AuthorizationCode(AuthFlowBase):
 
         logger.info(f'Authorization complite. Token "{self.token_info["access_token"][:7]}..." will be expire at {time.ctime(int(self.token_info["expires_at"]))}')
         return self.token_info['access_token']
-
 
     def _get_authorization_code(self) -> str:
         """ Step 1. Have your application request authorization; the user logs in and authorizes access
@@ -329,7 +338,14 @@ class AuthorizationCodeWithPKCE(AuthFlowBase):
             if Scope(self.token_info['scope']) == self.scope:
                 if self._is_token_expired():
                     logger.debug(f'Token expired at {time.ctime(int(self.token_info["expires_at"]))}. Refreshing token...')
-                    self._refresh_authorization_token()
+                    try:
+                        self._refresh_authorization_token()
+                    except AuthFlowRequestError as err:
+                        if err.code == 400:
+                            logger.debug(err)
+                            logger.debug('Cleaning cache, trying to get another token')
+                            self._clean_cache()
+                            self._get_authorization_token()
             else:
                 logger.info('Scopes are not compatible. Getting new token...')
                 self._get_authorization_token()
