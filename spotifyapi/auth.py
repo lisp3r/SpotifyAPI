@@ -171,18 +171,22 @@ class AuthorizationCode(AuthFlowBase):
     def get_token(self) -> str:
         logger.info('Authorizing with Authorization Code Flow')
         self._get_cached_token()
-        logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
 
-        if not self.token_info:
+        if self.token_info:
+            logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
+            if Scope(self.token_info['scope']) == self.scope:
+                if self._is_token_expired():
+                    logger.debug(f'Token expired at {time.ctime(int(self.token_info["expires_at"]))}. Refreshing token...')
+                    self._refresh_authorization_token()
+            else:
+                logger.info('Scopes are not compatible. Getting new token...')
+                self._get_authorization_token()
+        else:
             self._get_authorization_token()
 
-        if self.token_info and Scope(self.token_info['scope']) == self.scope:
-            if self._is_token_expired():
-                logger.debug(f'Token expired at {time.ctime(int(self.token_info["expires_at"]))}. Refreshing token...')
-                self._refresh_authorization_token()
-        logger.info('Authorization complite')
-        logger.debug(f'Token will be expires at {time.ctime(int(self.token_info["expires_at"]))}')
+        logger.info(f'Authorization complite. Token "{self.token_info["access_token"][:7]}..." will be expire at {time.ctime(int(self.token_info["expires_at"]))}')
         return self.token_info['access_token']
+
 
     def _get_authorization_code(self) -> str:
         """ Step 1. Have your application request authorization; the user logs in and authorizes access
@@ -317,20 +321,22 @@ class AuthorizationCodeWithPKCE(AuthFlowBase):
         self.redirect_uri = redirect_uri
 
     def get_token(self) -> str:
-        logger.info('Authorizing with PKCE Authorization Code Flow')
+        logger.info('Authorizing with Authorization Code Flow')
         self._get_cached_token()
-        logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
 
-        if not self.token_info:
+        if self.token_info:
+            logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
+            if Scope(self.token_info['scope']) == self.scope:
+                if self._is_token_expired():
+                    logger.debug(f'Token expired at {time.ctime(int(self.token_info["expires_at"]))}. Refreshing token...')
+                    self._refresh_authorization_token()
+            else:
+                logger.info('Scopes are not compatible. Getting new token...')
+                self._get_authorization_token()
+        else:
             self._get_authorization_token()
 
-        if self.token_info and Scope(self.token_info['scope']) == self.scope:
-            if self._is_token_expired():
-                logger.debug('Token expired. Refreshing token...')
-                self._refresh_authorization_token()
-
-        logger.info('Authorization complite')
-        logger.debug(f'Token will be expires at {time.ctime(int(self.token_info["expires_at"]))}')
+        logger.info(f'Authorization complite. Token "{self.token_info["access_token"][:7]}..." will be expire at {time.ctime(int(self.token_info["expires_at"]))}')
         return self.token_info['access_token']
 
     def _generate_consts(self) -> tuple:
