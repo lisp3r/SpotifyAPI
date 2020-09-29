@@ -127,7 +127,8 @@ class AuthFlowBase():
                 logger.info('Got cached token')
         except (IOError, json.decoder.JSONDecodeError) as e:
             logger.warning(f'Can not get token from {self.cache_token_path}: {e}')
-        self.token_info = token_info
+        # self.token_info = token_info
+        return token_info
 
     def _is_token_expired(self) -> bool:
         now = int(time.time())
@@ -136,6 +137,10 @@ class AuthFlowBase():
     def _cache_token(self) -> None:
         try:
             with open(self.cache_token_path, 'w') as f:
+                if not self.token_info.get('refresh_token'):
+                    logger.debug('No refresh token in a new token!!!')
+                    _tk = self._get_cached_token()
+                    self.token_info['refresh_token'] = _tk['refresh_token']
                 json.dump(self.token_info, f)
         except IOError as e:
             logger.warning(f'Can not save token in {self.cache_token_path}: {e}')
@@ -173,10 +178,10 @@ class AuthorizationCode(AuthFlowBase):
 
     def get_token(self) -> str:
         logger.info('Authorizing with Authorization Code Flow')
-        self._get_cached_token()
+        self.token_info = self._get_cached_token()
 
         if self.token_info:
-            logger.debug(f'Cached token: {str(self.token_info)[:25]}...')
+            logger.debug(f'Cached token: {self.token_info["access_token"][:10]}...')
             if Scope(self.token_info['scope']) == self.scope:
                 if self._is_token_expired():
                     logger.debug(f'Token expired at {time.ctime(int(self.token_info["expires_at"]))}. Refreshing token...')
@@ -194,7 +199,7 @@ class AuthorizationCode(AuthFlowBase):
         else:
             self._get_authorization_token()
 
-        logger.info(f'Authorization complite. Token "{self.token_info["access_token"][:7]}..." will be expire at {time.ctime(int(self.token_info["expires_at"]))}')
+        logger.info(f'Authorization complite. Token {self.token_info["access_token"][:10]}... will be expire at {time.ctime(int(self.token_info["expires_at"]))}')
         return self.token_info['access_token']
 
     def _get_authorization_code(self) -> str:
@@ -297,6 +302,7 @@ class AuthorizationCode(AuthFlowBase):
             result = resp.json()
             logger.error('Getting responce token error')
             raise AuthFlowRequestError(error=result['error'], error_descr=result['error_description'], code=resp.status_code)
+        logger.debug(resp.text)
         self.token_info = resp.json()
         self.token_info['expires_at'] = int(time.time()) + self.token_info["expires_in"]
         if cache_token:
@@ -331,7 +337,7 @@ class AuthorizationCodeWithPKCE(AuthFlowBase):
 
     def get_token(self) -> str:
         logger.info('Authorizing with Authorization Code Flow')
-        self._get_cached_token()
+        self.token_info = self._get_cached_token()
 
         if self.token_info:
             logger.debug(f'Cached token: {str(self.token_info)[:25]}...')

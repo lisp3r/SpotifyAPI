@@ -4,6 +4,8 @@
 
 [Spotify IDs](https://developer.spotify.com/documentation/web-api/#spotify-uris-and-ids)
 
+[About refresh tokens](https://github.com/spotify/web-api/issues/911)
+
 ## API architecture
 
 auth.py
