@@ -4,9 +4,9 @@
 
 [Spotify IDs](https://developer.spotify.com/documentation/web-api/#spotify-uris-and-ids)
 
-[About refresh tokens](https://github.com/spotify/web-api/issues/911)
-
 ## API architecture
+
+Refresh token comes just one time. It must be saved separately and using for getting new token every now and again. [About refresh tokens](https://github.com/spotify/web-api/issues/911)
 
 auth.py
 

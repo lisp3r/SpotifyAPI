@@ -136,11 +136,11 @@ class AuthFlowBase():
 
     def _cache_token(self) -> None:
         try:
+            if not self.token_info.get('refresh_token'):
+                logger.debug('No refresh token in a new token!!!')
+                _tk = self._get_cached_token()
+                self.token_info['refresh_token'] = _tk['refresh_token']
             with open(self.cache_token_path, 'w') as f:
-                if not self.token_info.get('refresh_token'):
-                    logger.debug('No refresh token in a new token!!!')
-                    _tk = self._get_cached_token()
-                    self.token_info['refresh_token'] = _tk['refresh_token']
                 json.dump(self.token_info, f)
         except IOError as e:
             logger.warning(f'Can not save token in {self.cache_token_path}: {e}')
