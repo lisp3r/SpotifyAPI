@@ -78,6 +78,58 @@ class Spotify:
 
         return resp
 
+    ## Album
+
+    def getAlbum(self, id, market=None) -> dict:
+        """ Get an Album
+        id: The Spotify ID for the album.
+        market: Optional. An ISO 3166-1 alpha-2 country code or the string from_token.
+        """
+        payload = dict()
+        if market:
+            payload.update({'market': market})
+
+        resp = self.__api_request(method='GET', url_path=f'albums/{id}', params=payload)
+        return resp.json()
+
+    def getAlbumTracks(self, id, market=None, limit=None, offset=None) -> dict:
+        """ Get an Album
+        id: The Spotify ID for the album.
+        limit: Optional. The maximum number of tracks to return. Default: 20. Minimum: 1. Maximum: 50.
+        offset: Optional. The index of the first track to return. Default: 0 (the first object). Use with limit to get the next set of tracks.
+        market: Optional. An ISO 3166-1 alpha-2 country code or the string from_token.
+        """
+        payload = dict()
+        if market:
+            payload.update({'market': market})
+        if limit:
+            payload.update({'limit': limit})
+        if offset:
+            payload.update({'offset': offset})
+
+        resp = self.__api_request(method='GET', url_path=f'albums/{id}/tracks', params=payload)
+        return resp.json()
+
+    ## Artist
+
+    def getArtist(self, id) -> dict:
+        return self.__api_request(method='GET', url_path=f'artists/{id}').json()
+
+    def getArtistAlbums(self, id, include_groups=None, country=None, limit=None, offset=None):
+        payload = dict()
+        if country:
+            payload.update({'country': country})
+        if limit:
+            payload.update({'limit': limit})
+        if offset:
+            payload.update({'offset': offset})
+
+        resp = self.__api_request(method='GET', url_path=f'artists/{id}/albums', params=payload)
+        return resp.json()
+
+    def getRelatedArtists(self, id):
+        return self.__api_request(method='GET', url_path=f'artists/{id}/related-artists').json()
+
     ## Misc
 
     def search(self, raw_q, q_type, market=None, limit=None, offset=None, include_external=False):
